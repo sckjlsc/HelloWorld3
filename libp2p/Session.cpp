@@ -28,6 +28,8 @@
 #include <libdevcore/CommonIO.h>
 #include <libdevcore/Exceptions.h>
 #include <chrono>
+#include <iostream>
+//#include <libsniffer/logmacros.h>
 
 using namespace std;
 using namespace dev;
@@ -47,6 +49,8 @@ Session::Session(Host* _h, unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLP
     m_lastReceived = m_connect = chrono::steady_clock::now();
     DEV_GUARDED(x_info)
         m_info.socketId = m_socket->ref().native_handle();
+
+   std::cout << "sancai ClientVersion:" << _info.clientVersion << std::endl;
 }
 
 Session::~Session()

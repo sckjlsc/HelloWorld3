@@ -61,6 +61,8 @@
 #include "AccountManager.h"
 
 #include <aleth/buildinfo.h>
+//#include <libsniffer/logger.h>
+//#include <libsniffer/logmacros.h>
 
 using namespace std;
 using namespace dev;
@@ -177,6 +179,8 @@ bool ExitHandler::s_shouldExit = false;
 
 int main(int argc, char** argv)
 {
+//	sniffer::g_InitLog(std::string("trace"));
+//	LOGINF << "Main Start";
     setDefaultOrCLocale();
 
     // Init secp256k1 context by calling one of the functions.
@@ -260,12 +264,16 @@ int main(int argc, char** argv)
             author = config[1].toHash<Address>();
         }
         catch (...) {}
+    } else {
+    	std::cout << "config.rlp empty" << std::endl;
     }
 
     if (argc > 1 && (string(argv[1]) == "wallet" || string(argv[1]) == "account"))
     {
         AccountManager accountm;
         return !accountm.execute(argc, argv);
+    } else {
+    	std::cout << "no wallet account" << std::endl;
     }
 
 
@@ -572,6 +580,8 @@ int main(int argc, char** argv)
             {
                 cerr << "Config file not found or empty (" << configPath.string() << ")\n";
                 return -1;
+            } else {
+            	std::cout << "sancai ConfigJson(" << configPath.string() << ")\n";
             }
         }
         catch (...)
@@ -883,6 +893,7 @@ int main(int argc, char** argv)
         }
     };
 
+    // std::cout << "sancai operationmode:" << mode << std::endl;
     if (mode == OperationMode::Export)
     {
         ofstream fout(filename, std::ofstream::binary);
@@ -1030,6 +1041,10 @@ int main(int argc, char** argv)
         c->setAuthor(author);
         if (networkID != NoNetworkID)
             c->setNetworkId(networkID);
+
+    	cout << "client:" << miner.minerType() <<" NID:" << networkID << std::endl;
+    } else {
+    	cout << "sancai client null" << std::endl;
     }
 
     auto renderFullAddress = [&](Address const& _a) -> std::string
@@ -1037,8 +1052,11 @@ int main(int argc, char** argv)
         return toUUID(keyManager.uuid(_a)) + " - " + _a.hex();
     };
 
-    if (author)
+    if (author){
         cout << "Mining Beneficiary: " << renderFullAddress(author) << "\n";
+    } else {
+    	cout << "sancai author empty"<< std::endl;
+    }
 
     if (bootstrap || !remoteHost.empty() || enableDiscovery || listenSet || !preferredNodes.empty())
     {
