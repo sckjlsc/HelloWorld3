@@ -22,22 +22,20 @@
 
 #pragma once
 
-#include <chrono>
+#include "Block.h"
+#include "CommonNet.h"
 #include "Interface.h"
 #include "LogFilter.h"
 #include "TransactionQueue.h"
-#include "Block.h"
-#include "CommonNet.h"
+#include <chrono>
 
 namespace dev
 {
-
 namespace eth
 {
-
 struct InstalledFilter
 {
-    InstalledFilter(LogFilter const& _f): filter(_f) {}
+    InstalledFilter(LogFilter const& _f) : filter(_f) {}
 
     LogFilter filter;
     unsigned refCount = 1;
@@ -52,34 +50,41 @@ static const LocalisedLogEntry InitialChange(SpecialLogEntry);
 
 struct ClientWatch
 {
-    ClientWatch(): lastPoll(std::chrono::system_clock::now()) {}
-    explicit ClientWatch(h256 _id, Reaping _r): id(_id), lastPoll(_r == Reaping::Automatic ? std::chrono::system_clock::now() : std::chrono::system_clock::time_point::max()) {}
+    ClientWatch() : lastPoll(std::chrono::system_clock::now()) {}
+    explicit ClientWatch(h256 _id, Reaping _r)
+      : id(_id),
+        lastPoll(_r == Reaping::Automatic ? std::chrono::system_clock::now() :
+                                            std::chrono::system_clock::time_point::max())
+    {}
 
     h256 id;
 #if INITIAL_STATE_AS_CHANGES
-    LocalisedLogEntries changes = LocalisedLogEntries{ InitialChange };
+    LocalisedLogEntries changes = LocalisedLogEntries{InitialChange};
 #else
     LocalisedLogEntries changes;
 #endif
     mutable std::chrono::system_clock::time_point lastPoll = std::chrono::system_clock::now();
 };
 
-class ClientBase: public Interface
+class ClientBase : public Interface
 {
 public:
     ClientBase() {}
     virtual ~ClientBase() {}
 
     /// Estimate gas usage for call/create.
-    /// @param _maxGas An upper bound value for estimation, if not provided default value of c_maxGasEstimate will be used.
+    /// @param _maxGas An upper bound value for estimation, if not provided default value of
+    /// c_maxGasEstimate will be used.
     /// @param _callback Optional callback function for progress reporting
-    std::pair<u256, ExecutionResult> estimateGas(Address const& _from, u256 _value, Address _dest, bytes const& _data, int64_t _maxGas, u256 _gasPrice, BlockNumber _blockNumber, GasEstimationCallback const& _callback) override;
+    std::pair<u256, ExecutionResult> estimateGas(Address const& _from, u256 _value, Address _dest,
+        bytes const& _data, int64_t _maxGas, u256 _gasPrice, BlockNumber _blockNumber,
+        GasEstimationCallback const& _callback) override;
 
     using Interface::balanceAt;
-    using Interface::countAt;
-    using Interface::stateAt;
     using Interface::codeAt;
     using Interface::codeHashAt;
+    using Interface::countAt;
+    using Interface::stateAt;
     using Interface::storageAt;
 
     u256 balanceAt(Address _a, BlockNumber _block) const override;
@@ -92,7 +97,8 @@ public:
 
     LocalisedLogEntries logs(unsigned _watchId) const override;
     LocalisedLogEntries logs(LogFilter const& _filter) const override;
-    virtual void prependLogsFromBlock(LogFilter const& _filter, h256 const& _blockHash, BlockPolarity _polarity, LocalisedLogEntries& io_logs) const;
+    virtual void prependLogsFromBlock(LogFilter const& _filter, h256 const& _blockHash,
+        BlockPolarity _polarity, LocalisedLogEntries& io_logs) const;
 
     /// Install, uninstall and query watches.
     unsigned installWatch(LogFilter const& _filter, Reaping _r = Reaping::Automatic) override;
@@ -111,22 +117,39 @@ public:
     Transaction transaction(h256 _blockHash, unsigned _i) const override;
     LocalisedTransaction localisedTransaction(h256 const& _blockHash, unsigned _i) const override;
     TransactionReceipt transactionReceipt(h256 const& _transactionHash) const override;
-    LocalisedTransactionReceipt localisedTransactionReceipt(h256 const& _transactionHash) const override;
+    LocalisedTransactionReceipt localisedTransactionReceipt(
+        h256 const& _transactionHash) const override;
     std::pair<h256, unsigned> transactionLocation(h256 const& _transactionHash) const override;
     Transactions transactions(h256 _blockHash) const override;
-    Transactions transactions(BlockNumber _block) const override { if (_block == PendingBlock) return postSeal().pending(); return transactions(hashFromNumber(_block)); }
+    Transactions transactions(BlockNumber _block) const override
+    {
+        if (_block == PendingBlock)
+            return postSeal().pending();
+        return transactions(hashFromNumber(_block));
+    }
     TransactionHashes transactionHashes(h256 _blockHash) const override;
     BlockHeader uncle(h256 _blockHash, unsigned _i) const override;
     UncleHashes uncleHashes(h256 _blockHash) const override;
     unsigned transactionCount(h256 _blockHash) const override;
-    unsigned transactionCount(BlockNumber _block) const override { if (_block == PendingBlock) { auto p = postSeal().pending(); return p.size(); } return transactionCount(hashFromNumber(_block)); }
+    unsigned transactionCount(BlockNumber _block) const override
+    {
+        if (_block == PendingBlock)
+        {
+            auto p = postSeal().pending();
+            return p.size();
+        }
+        return transactionCount(hashFromNumber(_block));
+    }
     unsigned uncleCount(h256 _blockHash) const override;
     unsigned number() const override;
     h256s pendingHashes() const override;
     BlockHeader pendingInfo() const override;
     BlockDetails pendingDetails() const override;
 
-    EVMSchedule evmSchedule() const override { return sealEngine()->evmSchedule(pendingInfo().number()); }
+    EVMSchedule evmSchedule() const override
+    {
+        return sealEngine()->evmSchedule(pendingInfo().number());
+    }
 
     ImportResult injectBlock(bytes const& _block) override;
 
@@ -168,7 +191,7 @@ public:
     Block blockByNumber(BlockNumber _h) const;
 
     int chainId() const override;
-    
+
 protected:
     /// The interface that must be implemented in any class deriving this.
     /// {
@@ -181,19 +204,23 @@ protected:
     /// }
 
     // filters
-    mutable Mutex x_filtersWatches;							///< Our lock.
-    std::unordered_map<h256, InstalledFilter> m_filters;	///< The dictionary of filters that are active.
-    std::unordered_map<h256, h256s> m_specialFilters = std::unordered_map<h256, std::vector<h256>>{{PendingChangedFilter, {}}, {ChainChangedFilter, {}}};
-                                                            ///< The dictionary of special filters and their additional data
-    std::map<unsigned, ClientWatch> m_watches;				///< Each and every watch - these reference a filter.
+    mutable Mutex x_filtersWatches;                       ///< Our lock.
+    std::unordered_map<h256, InstalledFilter> m_filters;  ///< The dictionary of filters that are
+                                                          ///< active.
+    std::unordered_map<h256, h256s> m_specialFilters = std::unordered_map<h256, std::vector<h256>>{
+        {PendingChangedFilter, {}}, {ChainChangedFilter, {}}};
+    ///< The dictionary of special filters and their additional data
+    std::map<unsigned, ClientWatch> m_watches;  ///< Each and every watch - these reference a
+                                                ///< filter.
 
     Logger mc_loggerWatch{createLogger(VerbosityDebug, "watch")};
-    inline std::string location(const std::string& path) {
-      return path.substr(path.find_last_of("/\\") + 1);
+    inline std::string cbase_location(const std::string& path) const
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
     }
 
-    #define LOGCLTWCH \
-		LOG(mc_loggerWatch) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGCLTWCH LOG(mc_loggerWatch) << "[" << cbase_location(__FILE__) << ":" << __LINE__ << "] "
 };
 
-}}
+}  // namespace eth
+}  // namespace dev

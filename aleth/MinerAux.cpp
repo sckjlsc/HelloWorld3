@@ -102,7 +102,7 @@ void MinerCLI::doBenchmark(std::string const& _m, unsigned _warmupDuration, unsi
 {
     BlockHeader genesis;
     genesis.setDifficulty(1 << 18);
-    cdebug << Ethash::boundary(genesis);
+    LOGDBG << Ethash::boundary(genesis);
 
     GenericFarm<EthashProofOfWork> f;
     map<string, GenericFarm<EthashProofOfWork>::SealerDescriptor> sealers;

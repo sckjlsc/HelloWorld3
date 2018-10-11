@@ -19,22 +19,20 @@
  * @date 2014
  */
 
+#include "BlockHeader.h"
+#include "Exceptions.h"
 #include <libdevcore/Common.h>
 #include <libdevcore/Log.h>
 #include <libdevcore/RLP.h>
-#include <libdevcore/TrieDB.h>
 #include <libdevcore/StateCacheDB.h>
+#include <libdevcore/TrieDB.h>
 #include <libdevcore/TrieHash.h>
 #include <libethcore/Common.h>
-#include "Exceptions.h"
-#include "BlockHeader.h"
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
 
-BlockHeader::BlockHeader()
-{
-}
+BlockHeader::BlockHeader() {}
 
 BlockHeader::BlockHeader(bytesConstRef _block, BlockDataType _bdt, h256 const& _hashWith)
 {
@@ -43,8 +41,8 @@ BlockHeader::BlockHeader(bytesConstRef _block, BlockDataType _bdt, h256 const& _
     populate(header);
 }
 
-BlockHeader::BlockHeader(BlockHeader const& _other) :
-    m_parentHash(_other.parentHash()),
+BlockHeader::BlockHeader(BlockHeader const& _other)
+  : m_parentHash(_other.parentHash()),
     m_sha3Uncles(_other.sha3Uncles()),
     m_stateRoot(_other.stateRoot()),
     m_transactionsRoot(_other.transactionsRoot()),
@@ -132,8 +130,9 @@ h256 BlockHeader::hash(IncludeSeal _i) const
 
 void BlockHeader::streamRLPFields(RLPStream& _s) const
 {
-    _s	<< m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot << m_receiptsRoot << m_logBloom
-        << m_difficulty << m_number << m_gasLimit << m_gasUsed << m_timestamp << m_extraData;
+    _s << m_parentHash << m_sha3Uncles << m_author << m_stateRoot << m_transactionsRoot
+       << m_receiptsRoot << m_logBloom << m_difficulty << m_number << m_gasLimit << m_gasUsed
+       << m_timestamp << m_extraData;
 }
 
 void BlockHeader::streamRLP(RLPStream& _s, IncludeSeal _i) const
@@ -157,14 +156,19 @@ RLP BlockHeader::extractHeader(bytesConstRef _block)
 {
     RLP root(_block);
     if (!root.isList())
-        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block must be a list") << BadFieldError(0, _block.toString()));
+        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block must be a list")
+                                                   << BadFieldError(0, _block.toString()));
     RLP header = root[0];
     if (!header.isList())
-        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block header must be a list") << BadFieldError(0, header.data().toString()));
+        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block header must be a list")
+                                                   << BadFieldError(0, header.data().toString()));
     if (!root[1].isList())
-        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block transactions must be a list") << BadFieldError(1, root[1].data().toString()));
+        BOOST_THROW_EXCEPTION(InvalidBlockFormat()
+                              << errinfo_comment("Block transactions must be a list")
+                              << BadFieldError(1, root[1].data().toString()));
     if (!root[2].isList())
-        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block uncles must be a list") << BadFieldError(2, root[2].data().toString()));
+        BOOST_THROW_EXCEPTION(InvalidBlockFormat() << errinfo_comment("Block uncles must be a list")
+                                                   << BadFieldError(2, root[2].data().toString()));
     return header;
 }
 
@@ -192,7 +196,8 @@ void BlockHeader::populate(RLP const& _header)
     }
     catch (Exception const& _e)
     {
-        _e << errinfo_name("invalid block header format") << BadFieldError(field, toHex(_header[field].data().toBytes()));
+        _e << errinfo_name("invalid block header format")
+           << BadFieldError(field, toHex(_header[field].data().toBytes()));
         throw;
     }
 }
@@ -213,7 +218,8 @@ void BlockHeader::verify(Strictness _s, BlockHeader const& _parent, bytesConstRe
         BOOST_THROW_EXCEPTION(InvalidNumber());
 
     if (_s != CheckNothingNew && m_gasUsed > m_gasLimit)
-        BOOST_THROW_EXCEPTION(TooMuchGasUsed() << RequirementError(bigint(m_gasLimit), bigint(m_gasUsed)));
+        BOOST_THROW_EXCEPTION(
+            TooMuchGasUsed() << RequirementError(bigint(m_gasLimit), bigint(m_gasUsed)));
 
     if (_parent)
     {
@@ -232,9 +238,10 @@ void BlockHeader::verify(Strictness _s, BlockHeader const& _parent, bytesConstRe
         RLP root(_block);
 
         auto txList = root[1];
-        auto expectedRoot = trieRootOver(txList.itemCount(), [&](unsigned i){ return rlp(i); }, [&](unsigned i){ return txList[i].data().toBytes(); });
+        auto expectedRoot = trieRootOver(txList.itemCount(), [&](unsigned i) { return rlp(i); },
+            [&](unsigned i) { return txList[i].data().toBytes(); });
 
-        LOG(m_logger) << "Expected trie root: " << toString(expectedRoot);
+        LOGBHDBG << "Expected trie root: " << toString(expectedRoot);
         if (m_transactionsRoot != expectedRoot)
         {
             StateCacheDB tm;
@@ -251,19 +258,21 @@ void BlockHeader::verify(Strictness _s, BlockHeader const& _parent, bytesConstRe
                 transactionsTrie.insert(&k.out(), txList[i].data());
 
                 txs.push_back(txList[i].data());
-                cdebug << toHex(k.out()) << toHex(txList[i].data());
+                LOGDBG << toHex(k.out()) << toHex(txList[i].data());
             }
-            cdebug << "trieRootOver" << expectedRoot;
-            cdebug << "orderedTrieRoot" << orderedTrieRoot(txs);
-            cdebug << "TrieDB" << transactionsTrie.root();
-            cdebug << "Contents:";
-            for (auto const& t: txs)
-                cdebug << toHex(t);
+            LOGDBG << "trieRootOver" << expectedRoot;
+            LOGDBG << "orderedTrieRoot" << orderedTrieRoot(txs);
+            LOGDBG << "TrieDB" << transactionsTrie.root();
+            LOGDBG << "Contents:";
+            for (auto const& t : txs)
+                LOGDBG << toHex(t);
 
-            BOOST_THROW_EXCEPTION(InvalidTransactionsRoot() << Hash256RequirementError(expectedRoot, m_transactionsRoot));
+            BOOST_THROW_EXCEPTION(InvalidTransactionsRoot()
+                                  << Hash256RequirementError(expectedRoot, m_transactionsRoot));
         }
-        LOG(m_logger) << "Expected uncle hash: " << toString(sha3(root[2].data()));
+        LOGBHDBG << "Expected uncle hash: " << toString(sha3(root[2].data()));
         if (m_sha3Uncles != sha3(root[2].data()))
-            BOOST_THROW_EXCEPTION(InvalidUnclesHash() << Hash256RequirementError(sha3(root[2].data()), m_sha3Uncles));
+            BOOST_THROW_EXCEPTION(
+                InvalidUnclesHash() << Hash256RequirementError(sha3(root[2].data()), m_sha3Uncles));
     }
 }

@@ -59,7 +59,7 @@ namespace dev
 			{
 				js::mObject const& o = i.second.get_obj();
 
-				cnote << "  " << i.first;
+				LOGINF << "  " << i.first;
 				testname = "(" + i.first + ") ";
 
 				BOOST_REQUIRE_MESSAGE(o.count("out") > 0, testname + "out not set!");
@@ -111,12 +111,12 @@ namespace dev
 				}
 				catch (Exception const& _e)
 				{
-					cnote << "Exception: " << diagnostic_information(_e);
+					LOGINF << "Exception: " << diagnostic_information(_e);
 					was_exception = true;
 				}
 				catch (std::exception const& _e)
 				{
-					cnote << "rlp exception: " << _e.what();
+					LOGINF << "rlp exception: " << _e.what();
 					was_exception = true;
 				}
 
@@ -216,7 +216,7 @@ void runRlpTest(string _name, fs::path const& _path)
 
 	try
 	{
-		cnote << "TEST " << _name << ":";
+		LOGINF << "TEST " << _name << ":";
 		json_spirit::mValue v;
 		string const s = asString(dev::contents(testPath / fs::path(_name + ".json")));
 		BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of " << (testPath / fs::path(_name + ".json")).string() << " is empty. Have you cloned the 'tests' repo branch develop and set ETHEREUM_TEST_PATH to its path?");
@@ -280,7 +280,7 @@ BOOST_AUTO_TEST_CASE(rlpRandom)
 	{
 		try
 		{
-			cnote << "Testing ..." << path.filename();
+			LOGINF << "Testing ..." << path.filename();
 			json_spirit::mValue v;
 			string s = asString(dev::contents(path.string()));
 			BOOST_REQUIRE_MESSAGE(s.length() > 0, "Content of " + path.string() + " is empty. Have you cloned the 'tests' repo branch develop and set ETHEREUM_TEST_PATH to its path?");

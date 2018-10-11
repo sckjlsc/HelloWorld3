@@ -27,9 +27,8 @@
 using namespace dev;
 using namespace dev::eth;
 
-namespace // anonymous
+namespace  // anonymous
 {
-
 static unsigned const c_depthLimit = 1024;
 
 /// Upper bound of stack space needed by single CALL/CREATE execution. Set experimentally.
@@ -38,18 +37,19 @@ static size_t const c_singleExecutionStackSize = 100 * 1024;
 /// Standard thread stack size.
 static size_t const c_defaultStackSize =
 #if defined(__linux)
-     8 * 1024 * 1024;
+    8 * 1024 * 1024;
 #elif defined(_WIN32)
     16 * 1024 * 1024;
 #else
-    512 * 1024; // OSX and other OSs
+    512 * 1024;  // OSX and other OSs
 #endif
 
 /// Stack overhead prior to allocation.
 static size_t const c_entryOverhead = 128 * 1024;
 
 /// On what depth execution should be offloaded to additional separated stack space.
-static unsigned const c_offloadPoint = (c_defaultStackSize - c_entryOverhead) / c_singleExecutionStackSize;
+static unsigned const c_offloadPoint =
+    (c_defaultStackSize - c_entryOverhead) / c_singleExecutionStackSize;
 
 void goOnOffloadedStack(Executive& _e, OnOpFunc const& _onOp)
 {
@@ -58,18 +58,22 @@ void goOnOffloadedStack(Executive& _e, OnOpFunc const& _onOp)
     attrs.set_stack_size((c_depthLimit - c_offloadPoint) * c_singleExecutionStackSize);
 
     // Create new thread with big stack and join immediately.
-    // TODO: It is possible to switch the implementation to Boost.Context or similar when the API is stable.
+    // TODO: It is possible to switch the implementation to Boost.Context or similar when the API is
+    // stable.
     boost::exception_ptr exception;
-    boost::thread{attrs, [&]{
-        try
-        {
-            _e.go(_onOp);
-        }
-        catch (...)
-        {
-            exception = boost::current_exception(); // Catch all exceptions to be rethrown in parent thread.
-        }
-    }}.join();
+    boost::thread{attrs,
+        [&] {
+            try
+            {
+                _e.go(_onOp);
+            }
+            catch (...)
+            {
+                exception = boost::current_exception();  // Catch all exceptions to be rethrown in
+                                                         // parent thread.
+            }
+        }}
+        .join();
     if (exception)
         boost::rethrow_exception(exception);
 }
@@ -83,7 +87,7 @@ void go(unsigned _depth, Executive& _e, OnOpFunc const& _onOp)
 
     if (_depth == c_offloadPoint)
     {
-        cnote << "Stack offloading (depth: " << c_offloadPoint << ")";
+        LOGINF << "Stack offloading (depth: " << c_offloadPoint << ")";
         goOnOffloadedStack(_e, _onOp);
     }
     else
@@ -120,7 +124,7 @@ evmc_status_code transactionExceptionToEvmcStatusCode(TransactionException ex) n
     }
 }
 
-} // anonymous namespace
+}  // anonymous namespace
 
 
 CallResult ExtVM::call(CallParameters& _p)
@@ -151,7 +155,8 @@ void ExtVM::setStore(u256 _n, u256 _v)
     m_s.setStorage(myAddress, _n, _v);
 }
 
-CreateResult ExtVM::create(u256 _endowment, u256& io_gas, bytesConstRef _code, Instruction _op, u256 _salt, OnOpFunc const& _onOp)
+CreateResult ExtVM::create(u256 _endowment, u256& io_gas, bytesConstRef _code, Instruction _op,
+    u256 _salt, OnOpFunc const& _onOp)
 {
     Executive e{m_s, envInfo(), m_sealEngine, depth + 1};
     bool result = false;

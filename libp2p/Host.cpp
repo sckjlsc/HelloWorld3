@@ -266,7 +266,7 @@ void Host::startPeerSession(Public const& _id, RLP const& _rlp, unique_ptr<RLPXF
 
     if (pub != _id)
     {
-        cdebug << "Wrong ID: " << pub << " vs. " << _id;
+        LOGDBG << "Wrong ID: " << pub << " vs. " << _id;
         return;
     }
 
@@ -310,7 +310,7 @@ void Host::startPeerSession(Public const& _id, RLP const& _rlp, unique_ptr<RLPXF
 
     if (m_netConfig.pin && !isRequiredPeer(_id))
     {
-        cdebug << "Unexpected identity from peer (got" << _id << ", must be one of "
+        LOGDBG << "Unexpected identity from peer (got" << _id << ", must be one of "
                << m_requiredPeers << ")";
         ps->disconnect(UnexpectedIdentity);
         return;

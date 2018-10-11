@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(hexPrefix_test)
 	fs::path testPath = test::getTestPath();
 	testPath /= fs::path("BasicTests");
 
-	cnote << "Testing Hex-Prefix-Encode...";
+	LOGINF << "Testing Hex-Prefix-Encode...";
 	js::mValue v;
 	string const s = contentsString(testPath / fs::path("hexencodetest.json"));
 	BOOST_REQUIRE_MESSAGE(s.length() > 0, "Content from 'hexencodetest.json' is empty. Have you cloned the 'tests' repo branch develop?");
@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(hexPrefix_test)
 	for (auto& i: v.get_obj())
 	{
 		js::mObject& o = i.second.get_obj();
-		cnote << i.first;
+		LOGINF << i.first;
 		bytes v;
 		for (auto& i: o["seq"].get_array())
 			v.push_back((byte)i.get_int());

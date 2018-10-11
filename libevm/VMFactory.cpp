@@ -77,7 +77,7 @@ void setVMKind(const std::string& _name)
     g_evmcDll.reset();
 
     evmc_loader_error_code ec;
-    evmc_instance *instance = evmc_load_and_create(_name.c_str(), &ec);
+    evmc_instance* instance = evmc_load_and_create(_name.c_str(), &ec);
     assert(ec == EVMC_LOADER_SUCCESS || instance == nullptr);
 
     switch (ec)
@@ -101,8 +101,8 @@ void setVMKind(const std::string& _name)
 
     g_evmcDll.reset(new EVMC{instance});
 
-    cnote << "Loaded EVMC module: " << g_evmcDll->name() << " " << g_evmcDll->version() << " ("
-          << _name << ")";
+    LOGINF << "Loaded EVMC module: " << g_evmcDll->name() << " " << g_evmcDll->version() << " ("
+           << _name << ")";
 }
 }  // namespace
 

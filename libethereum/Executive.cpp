@@ -60,24 +60,16 @@ std::string dumpStorage(ExtVM const& _ext)
 
 }  // namespace
 
-StandardTrace::StandardTrace():
-    m_trace(Json::arrayValue)
-{}
+StandardTrace::StandardTrace() : m_trace(Json::arrayValue) {}
 
 bool changesMemory(Instruction _inst)
 {
-    return
-        _inst == Instruction::MSTORE ||
-        _inst == Instruction::MSTORE8 ||
-        _inst == Instruction::MLOAD ||
-        _inst == Instruction::CREATE ||
-        _inst == Instruction::CALL ||
-        _inst == Instruction::CALLCODE ||
-        _inst == Instruction::SHA3 ||
-        _inst == Instruction::CALLDATACOPY ||
-        _inst == Instruction::CODECOPY ||
-        _inst == Instruction::EXTCODECOPY ||
-        _inst == Instruction::DELEGATECALL;
+    return _inst == Instruction::MSTORE || _inst == Instruction::MSTORE8 ||
+           _inst == Instruction::MLOAD || _inst == Instruction::CREATE ||
+           _inst == Instruction::CALL || _inst == Instruction::CALLCODE ||
+           _inst == Instruction::SHA3 || _inst == Instruction::CALLDATACOPY ||
+           _inst == Instruction::CODECOPY || _inst == Instruction::EXTCODECOPY ||
+           _inst == Instruction::DELEGATECALL;
 }
 
 bool changesStorage(Instruction _inst)
@@ -127,8 +119,8 @@ void StandardTrace::operator()(uint64_t _steps, uint64_t PC, Instruction inst, b
     }
     else
     {
-    	LOGWRN << "GAA!!! Tracing VM and more than one new/deleted stack frame between steps!";
-    	LOGWRN << "Attmepting naive recovery...";
+        LOGWRN << "GAA!!! Tracing VM and more than one new/deleted stack frame between steps!";
+        LOGWRN << "Attmepting naive recovery...";
         m_lastInst.resize(ext.depth + 1);
     }
 
@@ -143,11 +135,13 @@ void StandardTrace::operator()(uint64_t _steps, uint64_t PC, Instruction inst, b
         r["memory"] = memJson;
     }
 
-    if (!m_options.disableStorage && (m_options.fullStorage || changesStorage(lastInst) || newContext))
+    if (!m_options.disableStorage &&
+        (m_options.fullStorage || changesStorage(lastInst) || newContext))
     {
         Json::Value storage(Json::objectValue);
-        for (auto const& i: ext.state().storage(ext.myAddress))
-            storage[toCompactHexPrefixed(i.second.first, 1)] = toCompactHexPrefixed(i.second.second, 1);
+        for (auto const& i : ext.state().storage(ext.myAddress))
+            storage[toCompactHexPrefixed(i.second.first, 1)] =
+                toCompactHexPrefixed(i.second.second, 1);
         r["storage"] = storage;
     }
 
@@ -179,29 +173,28 @@ string StandardTrace::multilineTrace() const
         [](std::string a, Json::Value b) { return a + Json::FastWriter().write(b); });
 }
 
-Executive::Executive(Block& _s, BlockChain const& _bc, unsigned _level):
-    m_s(_s.mutableState()),
+Executive::Executive(Block& _s, BlockChain const& _bc, unsigned _level)
+  : m_s(_s.mutableState()),
     m_envInfo(_s.info(), _bc.lastBlockHashes(), 0),
     m_depth(_level),
     m_sealEngine(*_bc.sealEngine())
-{
-}
+{}
 
-Executive::Executive(Block& _s, LastBlockHashesFace const& _lh, unsigned _level):
-    m_s(_s.mutableState()),
+Executive::Executive(Block& _s, LastBlockHashesFace const& _lh, unsigned _level)
+  : m_s(_s.mutableState()),
     m_envInfo(_s.info(), _lh, 0),
     m_depth(_level),
     m_sealEngine(*_s.sealEngine())
-{
-}
+{}
 
-Executive::Executive(State& io_s, Block const& _block, unsigned _txIndex, BlockChain const& _bc, unsigned _level):
-    m_s(createIntermediateState(io_s, _block, _txIndex, _bc)),
-    m_envInfo(_block.info(), _bc.lastBlockHashes(), _txIndex ? _block.receipt(_txIndex - 1).cumulativeGasUsed() : 0),
+Executive::Executive(
+    State& io_s, Block const& _block, unsigned _txIndex, BlockChain const& _bc, unsigned _level)
+  : m_s(createIntermediateState(io_s, _block, _txIndex, _bc)),
+    m_envInfo(_block.info(), _bc.lastBlockHashes(),
+        _txIndex ? _block.receipt(_txIndex - 1).cumulativeGasUsed() : 0),
     m_depth(_level),
     m_sealEngine(*_bc.sealEngine())
-{
-}
+{}
 
 u256 Executive::gasUsed() const
 {
@@ -220,7 +213,8 @@ void Executive::initialize(Transaction const& _transaction)
     m_baseGasRequired = m_t.baseGasRequired(m_sealEngine.evmSchedule(m_envInfo.number()));
     try
     {
-        m_sealEngine.verifyTransaction(ImportRequirements::Everything, m_t, m_envInfo.header(), m_envInfo.gasUsed());
+        m_sealEngine.verifyTransaction(
+            ImportRequirements::Everything, m_t, m_envInfo.header(), m_envInfo.gasUsed());
     }
     catch (Exception const& ex)
     {
@@ -247,7 +241,8 @@ void Executive::initialize(Transaction const& _transaction)
             LOG(m_execLogger) << "Sender: " << m_t.sender().hex() << " Invalid Nonce: Require "
                               << nonceReq << " Got " << m_t.nonce();
             m_excepted = TransactionException::InvalidNonce;
-            BOOST_THROW_EXCEPTION(InvalidNonce() << RequirementError((bigint)nonceReq, (bigint)m_t.nonce()));
+            BOOST_THROW_EXCEPTION(
+                InvalidNonce() << RequirementError((bigint)nonceReq, (bigint)m_t.nonce()));
         }
 
         // Avoid unaffordable transactions.
@@ -260,7 +255,9 @@ void Executive::initialize(Transaction const& _transaction)
                               << m_s.balance(m_t.sender()) << " for sender: " << m_t.sender();
             m_excepted = TransactionException::NotEnoughCash;
             m_excepted = TransactionException::NotEnoughCash;
-            BOOST_THROW_EXCEPTION(NotEnoughCash() << RequirementError(totalCost, (bigint)m_s.balance(m_t.sender())) << errinfo_comment(m_t.sender().hex()));
+            BOOST_THROW_EXCEPTION(NotEnoughCash()
+                                  << RequirementError(totalCost, (bigint)m_s.balance(m_t.sender()))
+                                  << errinfo_comment(m_t.sender().hex()));
         }
         m_gasCost = (u256)gasCost;  // Convert back to 256-bit, safe now.
     }
@@ -277,14 +274,18 @@ bool Executive::execute()
 
     assert(m_t.gas() >= (u256)m_baseGasRequired);
     if (m_t.isCreation())
-        return create(m_t.sender(), m_t.value(), m_t.gasPrice(), m_t.gas() - (u256)m_baseGasRequired, &m_t.data(), m_t.sender());
+        return create(m_t.sender(), m_t.value(), m_t.gasPrice(),
+            m_t.gas() - (u256)m_baseGasRequired, &m_t.data(), m_t.sender());
     else
-        return call(m_t.receiveAddress(), m_t.sender(), m_t.value(), m_t.gasPrice(), bytesConstRef(&m_t.data()), m_t.gas() - (u256)m_baseGasRequired);
+        return call(m_t.receiveAddress(), m_t.sender(), m_t.value(), m_t.gasPrice(),
+            bytesConstRef(&m_t.data()), m_t.gas() - (u256)m_baseGasRequired);
 }
 
-bool Executive::call(Address const& _receiveAddress, Address const& _senderAddress, u256 const& _value, u256 const& _gasPrice, bytesConstRef _data, u256 const& _gas)
+bool Executive::call(Address const& _receiveAddress, Address const& _senderAddress,
+    u256 const& _value, u256 const& _gasPrice, bytesConstRef _data, u256 const& _gas)
 {
-    CallParameters params{_senderAddress, _receiveAddress, _receiveAddress, _value, _value, _gas, _data, {}};
+    CallParameters params{
+        _senderAddress, _receiveAddress, _receiveAddress, _value, _value, _gas, _data, {}};
     return call(params, _gasPrice, _senderAddress);
 }
 
@@ -312,27 +313,31 @@ bool Executive::call(CallParameters const& _p, u256 const& _gasPrice, Address co
             // Bail from exception.
 
             // Empty precompiled contracts need to be deleted even in case of OOG
-            // because the bug in both Geth and Parity led to deleting RIPEMD precompiled in this case
-            // see https://github.com/ethereum/go-ethereum/pull/3341/files#diff-2433aa143ee4772026454b8abd76b9dd
-            // We mark the account as touched here, so that is can be removed among other touched empty accounts (after tx finalization)
+            // because the bug in both Geth and Parity led to deleting RIPEMD precompiled in this
+            // case see
+            // https://github.com/ethereum/go-ethereum/pull/3341/files#diff-2433aa143ee4772026454b8abd76b9dd
+            // We mark the account as touched here, so that is can be removed among other touched
+            // empty accounts (after tx finalization)
             if (m_envInfo.number() >= m_sealEngine.chainParams().EIP158ForkBlock)
                 m_s.addBalance(_p.codeAddress, 0);
 
-            return true;	// true actually means "all finished - nothing more to be done regarding go().
+            return true;  // true actually means "all finished - nothing more to be done regarding
+                          // go().
         }
         else
         {
             m_gas = (u256)(_p.gas - g);
             bytes output;
             bool success;
-            tie(success, output) = m_sealEngine.executePrecompiled(_p.codeAddress, _p.data, m_envInfo.number());
+            tie(success, output) =
+                m_sealEngine.executePrecompiled(_p.codeAddress, _p.data, m_envInfo.number());
             size_t outputSize = output.size();
             m_output = owning_bytes_ref{std::move(output), 0, outputSize};
             if (!success)
             {
                 m_gas = 0;
                 m_excepted = TransactionException::OutOfGas;
-                return true;	// true means no need to run go().
+                return true;  // true means no need to run go().
             }
         }
     }
@@ -354,26 +359,31 @@ bool Executive::call(CallParameters const& _p, u256 const& _gasPrice, Address co
     return !m_ext;
 }
 
-bool Executive::create(Address const& _txSender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+bool Executive::create(Address const& _txSender, u256 const& _endowment, u256 const& _gasPrice,
+    u256 const& _gas, bytesConstRef _init, Address const& _origin)
 {
     // Contract creation by an external account is the same as CREATE opcode
     return createOpcode(_txSender, _endowment, _gasPrice, _gas, _init, _origin);
 }
 
-bool Executive::createOpcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+bool Executive::createOpcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice,
+    u256 const& _gas, bytesConstRef _init, Address const& _origin)
 {
     u256 nonce = m_s.getNonce(_sender);
     m_newAddress = right160(sha3(rlpList(_sender, nonce)));
     return executeCreate(_sender, _endowment, _gasPrice, _gas, _init, _origin);
 }
 
-bool Executive::create2Opcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin, u256 const& _salt)
+bool Executive::create2Opcode(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice,
+    u256 const& _gas, bytesConstRef _init, Address const& _origin, u256 const& _salt)
 {
-    m_newAddress = right160(sha3(bytes{0xff} +_sender.asBytes() + toBigEndian(_salt) + sha3(_init)));
+    m_newAddress =
+        right160(sha3(bytes{0xff} + _sender.asBytes() + toBigEndian(_salt) + sha3(_init)));
     return executeCreate(_sender, _endowment, _gasPrice, _gas, _init, _origin);
 }
 
-bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice, u256 const& _gas, bytesConstRef _init, Address const& _origin)
+bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u256 const& _gasPrice,
+    u256 const& _gas, bytesConstRef _init, Address const& _origin)
 {
     if (_sender != MaxAddress ||
         m_envInfo.number() < m_sealEngine.chainParams().experimentalForkBlock)  // EIP86
@@ -383,8 +393,8 @@ bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u2
 
     m_isCreation = true;
 
-    // We can allow for the reverted state (i.e. that with which m_ext is constructed) to contain the m_orig.address, since
-    // we delete it explicitly if we decide we need to revert.
+    // We can allow for the reverted state (i.e. that with which m_ext is constructed) to contain
+    // the m_orig.address, since we delete it explicitly if we decide we need to revert.
 
     m_gas = _gas;
     bool accountAlreadyExist = (m_s.addressHasCode(m_newAddress) || m_s.getNonce(m_newAddress) > 0);
@@ -394,7 +404,7 @@ bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u2
         m_gas = 0;
         m_excepted = TransactionException::AddressAlreadyUsed;
         revert();
-        m_ext = {}; // cancel the _init execution if there are any scheduled.
+        m_ext = {};  // cancel the _init execution if there are any scheduled.
         return !m_ext;
     }
 
@@ -477,7 +487,7 @@ bool Executive::go(OnOpFunc const& _onOp)
                     }
                 }
                 if (m_res)
-                    m_res->output = out.toVector(); // copy output to execution result
+                    m_res->output = out.toVector();  // copy output to execution result
                 m_s.setCode(m_ext->myAddress, out.toVector());
             }
             else
@@ -498,24 +508,26 @@ bool Executive::go(OnOpFunc const& _onOp)
         }
         catch (InternalVMError const& _e)
         {
-            cerror << "Internal VM Error (EVMC status code: "
-                 << *boost::get_error_info<errinfo_evmcStatusCode>(_e) << ")";
+            LOGERR << "Internal VM Error (EVMC status code: "
+                   << *boost::get_error_info<errinfo_evmcStatusCode>(_e) << ")";
             revert();
             throw;
         }
         catch (Exception const& _e)
         {
-            // TODO: AUDIT: check that this can never reasonably happen. Consider what to do if it does.
-            cerror << "Unexpected exception in VM. There may be a bug in this implementation. "
-                 << diagnostic_information(_e);
+            // TODO: AUDIT: check that this can never reasonably happen. Consider what to do if it
+            // does.
+            LOGERR << "Unexpected exception in VM. There may be a bug in this implementation. "
+                   << diagnostic_information(_e);
             exit(1);
             // Another solution would be to reject this transaction, but that also
             // has drawbacks. Essentially, the amount of ram has to be increased here.
         }
         catch (std::exception const& _e)
         {
-            // TODO: AUDIT: check that this can never reasonably happen. Consider what to do if it does.
-            cerror << "Unexpected std::exception in VM. Not enough RAM? " << _e.what();
+            // TODO: AUDIT: check that this can never reasonably happen. Consider what to do if it
+            // does.
+            LOGERR << "Unexpected std::exception in VM. Not enough RAM? " << _e.what();
             exit(1);
             // Another solution would be to reject this transaction, but that also
             // has drawbacks. Essentially, the amount of ram has to be increased here.
@@ -526,7 +538,7 @@ bool Executive::go(OnOpFunc const& _onOp)
             m_res->output = m_output.toVector();
 
 #if ETH_TIMED_EXECUTIONS
-        cnote << "VM took:" << t.elapsed() << "; gas used: " << (sgas - m_endGas);
+        LOGINF << "VM took:" << t.elapsed() << "; gas used: " << (sgas - m_endGas);
 #endif
     }
     return true;
@@ -553,17 +565,17 @@ bool Executive::finalize()
 
     // Suicides...
     if (m_ext)
-        for (auto a: m_ext->sub.suicides)
+        for (auto a : m_ext->sub.suicides)
             m_s.kill(a);
 
     // Logs..
     if (m_ext)
         m_logs = m_ext->sub.logs;
 
-    if (m_res) // Collect results
+    if (m_res)  // Collect results
     {
         m_res->gasUsed = gasUsed();
-        m_res->excepted = m_excepted; // TODO: m_except is used only in ExtVM::call
+        m_res->excepted = m_excepted;  // TODO: m_except is used only in ExtVM::call
         m_res->newAddress = m_newAddress;
         m_res->gasRefunded = m_ext ? m_ext->sub.refunds : 0;
     }

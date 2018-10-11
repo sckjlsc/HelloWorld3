@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(genesis_tests)
 {
 	fs::path const testPath = test::getTestPath() / fs::path("BasicTests");
 
-	cnote << "Testing Genesis block...";
+	LOGINF << "Testing Genesis block...";
 	js::mValue v;
 	string const s = contentsString(testPath / fs::path("genesishashestest.json"));
 	BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of 'genesishashestest.json' is empty. Have you cloned the 'tests' repo branch develop?");

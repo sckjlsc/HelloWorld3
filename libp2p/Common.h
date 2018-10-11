@@ -25,32 +25,30 @@
 #pragma once
 
 #include <atomic>
-#include <string>
 #include <set>
+#include <string>
 #include <vector>
 
 // Make sure boost/asio.hpp is included before windows.h.
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-#include <chrono>
-#include <libdevcrypto/Common.h>
-#include <libdevcore/Log.h>
 #include <libdevcore/Exceptions.h>
-#include <libdevcore/RLP.h>
 #include <libdevcore/Guards.h>
+#include <libdevcore/Log.h>
+#include <libdevcore/RLP.h>
+#include <libdevcrypto/Common.h>
+#include <chrono>
 namespace ba = boost::asio;
 namespace bi = boost::asio::ip;
 
 namespace dev
 {
-
 class RLP;
 class RLPStream;
 
 namespace p2p
 {
-
 /// Peer network protocol version.
 extern const unsigned c_protocolVersion;
 extern const unsigned c_defaultIPPort;
@@ -74,11 +72,17 @@ class PeerCapabilityFace;
 class Host;
 class Session;
 
-struct NetworkStartRequired: virtual dev::Exception {};
-struct InvalidPublicIPAddress: virtual dev::Exception {};
+struct NetworkStartRequired : virtual dev::Exception
+{
+};
+struct InvalidPublicIPAddress : virtual dev::Exception
+{
+};
 
 /// The ECDHE agreement failed during RLPx handshake.
-struct ECDHEError: virtual Exception {};
+struct ECDHEError : virtual Exception
+{
+};
 
 #define NET_GLOBAL_LOGGER(NAME, SEVERITY)                      \
     BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_##NAME##Logger, \
@@ -92,16 +96,14 @@ NET_GLOBAL_LOGGER(netlog, VerbosityDebug)
 NET_GLOBAL_LOGGER(netdetails, VerbosityTrace)
 #define ccnetdetails LOG(dev::p2p::g_netdetailsLogger::get())
 
-inline std::string p2p_location(const std::string& path) {
-  return path.substr(path.find_last_of("/\\") + 1);
+inline std::string p2p_location(const std::string& path)
+{
+    return path.substr(path.find_last_of("/\\") + 1);
 }
 
-#define LOGNETTRC \
-		ccnetdetails << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGNETDBG \
-		ccnetlog << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGNETINF \
-		ccnetnote << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGNETTRC ccnetdetails << "[" << p2p::p2p_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGNETDBG ccnetlog << "[" << p2p::p2p_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGNETINF ccnetnote << "[" << p2p::p2p_location(__FILE__) << ":" << __LINE__ << "] "
 
 enum PacketType
 {
@@ -191,7 +193,7 @@ public:
         StreamList,
         StreamInline
     };
-    
+
     /// Setting true causes isAllowed to return true for all addresses. (Used by test fixtures)
     static bool test_allowLocal;
 
@@ -212,14 +214,13 @@ public:
                                                  isPublicAddress(m_address);
     }
 
-    bool operator==(NodeIPEndpoint const& _cmp) const {
+    bool operator==(NodeIPEndpoint const& _cmp) const
+    {
         return m_address == _cmp.m_address && m_udpPort == _cmp.m_udpPort &&
                m_tcpPort == _cmp.m_tcpPort;
     }
-    bool operator!=(NodeIPEndpoint const& _cmp) const {
-        return !operator==(_cmp);
-    }
-    
+    bool operator!=(NodeIPEndpoint const& _cmp) const { return !operator==(_cmp); }
+
     void streamRLP(RLPStream& _s, RLPAppend _append = StreamList) const;
     void interpretRLP(RLP const& _r);
 
@@ -248,10 +249,8 @@ struct NodeSpec
     /// Accepts user-readable strings of the form (enode://pubkey@)host({:port,:tcpport.udpport})
     NodeSpec(std::string const& _user);
 
-    NodeSpec(std::string const& _addr, uint16_t _port, int _udpPort = -1):
-        m_address(_addr),
-        m_tcpPort(_port),
-        m_udpPort(_udpPort == -1 ? _port : (uint16_t)_udpPort)
+    NodeSpec(std::string const& _addr, uint16_t _port, int _udpPort = -1)
+      : m_address(_addr), m_tcpPort(_port), m_udpPort(_udpPort == -1 ? _port : (uint16_t)_udpPort)
     {}
 
     NodeID id() const { return m_id; }
@@ -273,12 +272,14 @@ public:
     Node() = default;
     virtual ~Node() = default;
     Node(Node const&);
-    Node(Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional): id(_publicKey), endpoint(_ip), peerType(_peerType) {}
+    Node(Public _publicKey, NodeIPEndpoint const& _ip, PeerType _peerType = PeerType::Optional)
+      : id(_publicKey), endpoint(_ip), peerType(_peerType)
+    {}
     Node(NodeSpec const& _s, PeerType _peerType = PeerType::Optional);
 
     virtual NodeID const& address() const { return id; }
     virtual Public const& publicKey() const { return id; }
-    
+
     virtual operator bool() const { return (bool)id; }
 
     // TODO: make private, give accessors and rename m_...
@@ -297,10 +298,20 @@ class DeadlineOps
     class DeadlineOp
     {
     public:
-        DeadlineOp(ba::io_service& _io, unsigned _msInFuture, std::function<void(boost::system::error_code const&)> const& _f): m_timer(new ba::deadline_timer(_io)) { m_timer->expires_from_now(boost::posix_time::milliseconds(_msInFuture)); m_timer->async_wait(_f); }
-        ~DeadlineOp() { if (m_timer) m_timer->cancel(); }
-        
-        DeadlineOp(DeadlineOp&& _s): m_timer(_s.m_timer.release()) {}
+        DeadlineOp(ba::io_service& _io, unsigned _msInFuture,
+            std::function<void(boost::system::error_code const&)> const& _f)
+          : m_timer(new ba::deadline_timer(_io))
+        {
+            m_timer->expires_from_now(boost::posix_time::milliseconds(_msInFuture));
+            m_timer->async_wait(_f);
+        }
+        ~DeadlineOp()
+        {
+            if (m_timer)
+                m_timer->cancel();
+        }
+
+        DeadlineOp(DeadlineOp&& _s) : m_timer(_s.m_timer.release()) {}
         DeadlineOp& operator=(DeadlineOp&& _s)
         {
             assert(&_s != this);
@@ -308,49 +319,71 @@ class DeadlineOps
             m_timer.reset(_s.m_timer.release());
             return *this;
         }
-        
-        bool expired() { Guard l(x_timer); return m_timer->expires_from_now().total_nanoseconds() <= 0; }
-        void wait() { Guard l(x_timer); m_timer->wait(); }
-        
+
+        bool expired()
+        {
+            Guard l(x_timer);
+            return m_timer->expires_from_now().total_nanoseconds() <= 0;
+        }
+        void wait()
+        {
+            Guard l(x_timer);
+            m_timer->wait();
+        }
+
     private:
         std::unique_ptr<ba::deadline_timer> m_timer;
         Mutex x_timer;
     };
-    
+
 public:
-    DeadlineOps(ba::io_service& _io, unsigned _reapIntervalMs = 100): m_io(_io), m_reapIntervalMs(_reapIntervalMs), m_stopped(false) { reap(); }
+    DeadlineOps(ba::io_service& _io, unsigned _reapIntervalMs = 100)
+      : m_io(_io), m_reapIntervalMs(_reapIntervalMs), m_stopped(false)
+    {
+        reap();
+    }
     ~DeadlineOps() { stop(); }
 
-    void schedule(unsigned _msInFuture, std::function<void(boost::system::error_code const&)> const& _f) { if (m_stopped) return; DEV_GUARDED(x_timers) m_timers.emplace_back(m_io, _msInFuture, _f); }	
+    void schedule(
+        unsigned _msInFuture, std::function<void(boost::system::error_code const&)> const& _f)
+    {
+        if (m_stopped)
+            return;
+        DEV_GUARDED(x_timers) m_timers.emplace_back(m_io, _msInFuture, _f);
+    }
 
-    void stop() { m_stopped = true; DEV_GUARDED(x_timers) m_timers.clear(); }
+    void stop()
+    {
+        m_stopped = true;
+        DEV_GUARDED(x_timers) m_timers.clear();
+    }
 
     bool isStopped() const { return m_stopped; }
-    
+
 protected:
     void reap();
-    
+
 private:
     ba::io_service& m_io;
     unsigned m_reapIntervalMs;
-    
+
     std::vector<DeadlineOp> m_timers;
     Mutex x_timers;
-    
+
     std::atomic<bool> m_stopped;
 };
 
 /// Simple stream output for a NodeIPEndpoint.
 std::ostream& operator<<(std::ostream& _out, NodeIPEndpoint const& _ep);
-}
-    
-}
+}  // namespace p2p
+
+}  // namespace dev
 
 /// std::hash for asio::adress
 namespace std
 {
-
-template <> struct hash<bi::address>
+template <>
+struct hash<bi::address>
 {
     size_t operator()(bi::address const& _a) const
     {
@@ -362,9 +395,10 @@ template <> struct hash<bi::address>
             return boost::hash_range(range.begin(), range.end());
         }
         if (_a.is_unspecified())
-            return static_cast<size_t>(0x3487194039229152ull);  // Chosen by fair dice roll, guaranteed to be random
+            return static_cast<size_t>(0x3487194039229152ull);  // Chosen by fair dice roll,
+                                                                // guaranteed to be random
         return std::hash<std::string>()(_a.to_string());
     }
 };
 
-}
+}  // namespace std

@@ -15,27 +15,27 @@ You should have received a copy of the GNU General Public License
 along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 */
 /** @file capability.cpp
-* @author Vladislav Gluhovsky <vlad@ethdev.com>
-* @date May 2015
-*/
+ * @author Vladislav Gluhovsky <vlad@ethdev.com>
+ * @date May 2015
+ */
 
+#include <libp2p/Common.h>
+#include <libp2p/Host.h>
+#include <libp2p/HostCapability.h>
+#include <libp2p/PeerCapability.h>
+#include <libp2p/Session.h>
+#include <test/tools/libtesteth/Options.h>
+#include <test/tools/libtesteth/TestOutputHelper.h>
 #include <boost/test/unit_test.hpp>
 #include <chrono>
 #include <thread>
-#include <libp2p/Common.h>
-#include <libp2p/Host.h>
-#include <libp2p/Session.h>
-#include <libp2p/PeerCapability.h>
-#include <libp2p/HostCapability.h>
-#include <test/tools/libtesteth/TestOutputHelper.h>
-#include <test/tools/libtesteth/Options.h>
 
 using namespace std;
 using namespace dev;
 using namespace dev::test;
 using namespace dev::p2p;
 
-struct P2PFixture: public TestOutputHelperFixture
+struct P2PFixture : public TestOutputHelperFixture
 {
     P2PFixture() { dev::p2p::NodeIPEndpoint::test_allowLocal = true; }
     ~P2PFixture() { dev::p2p::NodeIPEndpoint::test_allowLocal = false; }
@@ -44,16 +44,22 @@ struct P2PFixture: public TestOutputHelperFixture
 class TestCapability : public PeerCapability
 {
 public:
-    TestCapability(weak_ptr<SessionFace> _s, std::string const& _name,
-        unsigned _messageCount, unsigned _idOffset, CapDesc const&)
-      : PeerCapability(move(_s), _name, _messageCount, _idOffset), m_cntReceivedMessages(0), m_testSum(0)
+    TestCapability(weak_ptr<SessionFace> _s, std::string const& _name, unsigned _messageCount,
+        unsigned _idOffset, CapDesc const&)
+      : PeerCapability(move(_s), _name, _messageCount, _idOffset),
+        m_cntReceivedMessages(0),
+        m_testSum(0)
     {}
     int countReceivedMessages() { return m_cntReceivedMessages; }
     int testSum() { return m_testSum; }
     static std::string name() { return "test"; }
     static u256 version() { return 2; }
     static unsigned messageCount() { return UserPacket + 1; }
-    void sendTestMessage(int _i) { RLPStream s; sealAndSend(prep(s, UserPacket, 1) << _i); }
+    void sendTestMessage(int _i)
+    {
+        RLPStream s;
+        sealAndSend(prep(s, UserPacket, 1) << _i);
+    }
 
 protected:
     bool interpretCapabilityPacket(unsigned _id, RLP const& _r) override;
@@ -64,14 +70,14 @@ protected:
 
 bool TestCapability::interpretCapabilityPacket(unsigned _id, RLP const& _r)
 {
-    //cnote << "Capability::interpret(): custom message received";
+    // LOGINF << "Capability::interpret(): custom message received";
     ++m_cntReceivedMessages;
     m_testSum += _r[0].toInt();
     BOOST_ASSERT(_id == UserPacket);
     return (_id == UserPacket);
 }
 
-class TestHostCapability: public HostCapability<TestCapability>, public Worker
+class TestHostCapability : public HostCapability<TestCapability>, public Worker
 {
 public:
     explicit TestHostCapability(Host const& _host)
@@ -87,7 +93,7 @@ public:
     }
 
     std::pair<int, int> retrieveTestData(NodeID const& _id)
-    { 
+    {
         int cnt = 0;
         int checksum = 0;
         for (auto i : peerSessions())
@@ -105,7 +111,7 @@ BOOST_FIXTURE_TEST_SUITE(p2pCapability, P2PFixture)
 
 BOOST_AUTO_TEST_CASE(capability)
 {
-    cnote << "Testing Capability...";
+    LOGINF << "Testing Capability...";
 
     int const step = 10;
     const char* const localhost = "127.0.0.1";
@@ -117,12 +123,12 @@ BOOST_AUTO_TEST_CASE(capability)
     host1.registerCapability(thc1);
     auto thc2 = make_shared<TestHostCapability>(host2);
     host2.registerCapability(thc2);
-    host1.start();	
+    host1.start();
     host2.start();
     auto port1 = host1.listenPort();
     auto port2 = host2.listenPort();
     BOOST_REQUIRE(port1);
-    BOOST_REQUIRE(port2);	
+    BOOST_REQUIRE(port2);
     BOOST_REQUIRE_NE(port1, port2);
 
     for (unsigned i = 0; i < 3000; i += step)
@@ -134,7 +140,8 @@ BOOST_AUTO_TEST_CASE(capability)
     }
 
     BOOST_REQUIRE(host1.isStarted() && host2.isStarted());
-    host1.requirePeer(host2.id(), NodeIPEndpoint(bi::address::from_string(localhost), port2, port2));
+    host1.requirePeer(
+        host2.id(), NodeIPEndpoint(bi::address::from_string(localhost), port2, port2));
 
     // Wait for up to 12 seconds, to give the hosts time to connect to each other.
     for (unsigned i = 0; i < 12000; i += step)
@@ -159,5 +166,3 @@ BOOST_AUTO_TEST_CASE(capability)
 }
 
 BOOST_AUTO_TEST_SUITE_END()
-
-

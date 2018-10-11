@@ -108,7 +108,7 @@ void test::RandomCodeBase::parseTestWithTypes(std::string& _test, std::map<std::
                 std::string debug;
                 int randomDepth = 1 + (int)randomSmallUniInt() % 10;
                 replace = rndRLPSequence(randomDepth, debug);
-                cnote << debug;
+                LOGINF << debug;
             }
             else if (type == "[CODE]")
                 replace = generate(50, _options);

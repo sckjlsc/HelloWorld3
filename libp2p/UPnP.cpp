@@ -66,7 +66,7 @@ UPnP::UPnP()
         if (!dev)
             dev = devlist; /* defaulting to first device */
 
-        cnote << "UPnP device:" << dev->descURL << "[st:" << dev->st << "]";
+        LOGINF << "UPnP device:" << dev->descURL << "[st:" << dev->st << "]";
 #if MINIUPNPC_API_VERSION >= 16
         int responsecode = 200;
         descXML = (char*)miniwget(dev->descURL, &descXMLsize, 0, &responsecode);
@@ -91,7 +91,7 @@ UPnP::UPnP()
     else
 #endif
     {
-        cnote << "UPnP device not found.";
+        LOGINF << "UPnP device not found.";
         BOOST_THROW_EXCEPTION(NoUPnPDevice());
     }
 }

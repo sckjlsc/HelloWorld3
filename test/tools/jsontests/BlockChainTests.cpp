@@ -345,7 +345,7 @@ json_spirit::mObject fillBCTest(json_spirit::mObject const& _input)
         //Import Uncles
         for (auto const& uHObj: blObjInput.at("uncleHeaders").get_array())
         {
-            cnote << "Generating uncle block at test " << testName;
+            LOGINF << "Generating uncle block at test " << testName;
             TestBlock uncle;
             mObject uncleHeaderObj = uHObj.get_obj();
             string uncleChainName = chainname;
@@ -356,19 +356,19 @@ json_spirit::mObject fillBCTest(json_spirit::mObject const& _input)
             block.addUncle(uncle);
         }
 
-        cnote << "Syncing uncle with chain " << testName;
+        LOGINF << "Syncing uncle with chain " << testName;
         vector<TestBlock> validUncles = blockchain.syncUncles(block.uncles());
         block.setUncles(validUncles);
 
         if (blObjInput.count("blockHeaderPremine"))
             overwriteBlockHeaderForTest(blObjInput.at("blockHeaderPremine").get_obj(), block, *chainMap[chainname]);
 
-        cnote << "Mining block '" << importBlockNumber << "' for chain '" << chainname
+        LOGINF << "Mining block '" << importBlockNumber << "' for chain '" << chainname
               << "' at test '" << testName << "'";
         block.mine(blockchain);
-        cnote << "Block mined with...";
-        cnote << "Transactions: " << block.transactionQueue().topTransactions(100).size();
-        cnote << "Uncles: " << block.uncles().size();
+        LOGINF << "Block mined with...";
+        LOGINF << "Transactions: " << block.transactionQueue().topTransactions(100).size();
+        LOGINF << "Uncles: " << block.uncles().size();
 
         TestBlock alterBlock(block);
         checkBlocks(block, alterBlock, testName);
@@ -396,7 +396,7 @@ json_spirit::mObject fillBCTest(json_spirit::mObject const& _input)
 
             blockchain.addBlock(alterBlock);
             if (testChain.addBlock(alterBlock))
-                cnote << "The most recent best Block now is " <<  importBlockNumber << "in chain" << chainname << "at test " << testName;
+                LOGINF << "The most recent best Block now is " <<  importBlockNumber << "in chain" << chainname << "at test " << testName;
 
             bool isException = (blObjInput.count("expectException"+test::netIdToString(test::TestBlockChain::s_sealEngineNetwork))
                                 || blObjInput.count("expectExceptionALL"));
@@ -410,13 +410,13 @@ json_spirit::mObject fillBCTest(json_spirit::mObject const& _input)
         }
         catch (Exception const& _e)
         {
-            cnote << testName + "block import throw an exception: " << diagnostic_information(_e);
+            LOGINF << testName + "block import throw an exception: " << diagnostic_information(_e);
             checkExpectedException(blObj, _e);
             eraseJsonSectionForInvalidBlock(blObj);
         }
         catch (std::exception const& _e)
         {
-            cnote << testName + "block import throw an exception: " << _e.what();
+            LOGINF << testName + "block import throw an exception: " << _e.what();
             cout << testName + "block import thrown std exeption\n";
             eraseJsonSectionForInvalidBlock(blObj);
         }
@@ -486,19 +486,19 @@ void testBCTest(json_spirit::mObject const& _o)
         // if exception is thrown, RLP is invalid and no blockHeader, Transaction list, or Uncle list should be given
         catch (Exception const& _e)
         {
-            cnote << testName + "state sync or block import did throw an exception: " << diagnostic_information(_e);
+            LOGINF << testName + "state sync or block import did throw an exception: " << diagnostic_information(_e);
             checkJsonSectionForInvalidBlock(blObj);
             continue;
         }
         catch (std::exception const& _e)
         {
-            cnote << testName + "state sync or block import did throw an exception: " << _e.what();
+            LOGINF << testName + "state sync or block import did throw an exception: " << _e.what();
             checkJsonSectionForInvalidBlock(blObj);
             continue;
         }
         catch (...)
         {
-            cnote << testName + "state sync or block import did throw an exception\n";
+            LOGINF << testName + "state sync or block import did throw an exception\n";
             checkJsonSectionForInvalidBlock(blObj);
             continue;
         }
@@ -575,11 +575,11 @@ void testBCTest(json_spirit::mObject const& _o)
         }
         else
         {
-            cnote << "Block Number " << testChain.topBlock().blockHeader().number();
-            cnote << "Skipping the balance validation of potential correct block: " << TestOutputHelper::get().testName();
+            LOGINF << "Block Number " << testChain.topBlock().blockHeader().number();
+            LOGINF << "Skipping the balance validation of potential correct block: " << TestOutputHelper::get().testName();
         }
 
-        cnote << "Tested topblock number" << blockNumber << "for chain " << blockChainName << testName;
+        LOGINF << "Tested topblock number" << blockNumber << "for chain " << blockChainName << testName;
 
     }//allBlocks
 
@@ -832,7 +832,7 @@ void overwriteUncleHeaderForTest(mObject& uncleHeaderObj, TestBlock& uncle, std:
     }
 
     uncle.setBlockHeader(uncleHeader);
-    cnote << "Updating block nonce. Difficulty of: " << uncle.blockHeader().difficulty();
+    LOGINF << "Updating block nonce. Difficulty of: " << uncle.blockHeader().difficulty();
     uncle.updateNonce(_chainBranch.blockchain);
 
     if (overwrite == "nonce" || overwrite == "mixHash")
@@ -850,15 +850,15 @@ void compareBlocks(TestBlock const& _a, TestBlock const& _b)
 {
     if (sha3(RLP(_a.bytes())[0].data()) != sha3(RLP(_b.bytes())[0].data()))
     {
-        cnote << "block header mismatch\n";
-        cnote << toHexPrefixed(RLP(_a.bytes())[0].data()) << "vs" << toHexPrefixed(RLP(_b.bytes())[0].data());
+        LOGINF << "block header mismatch\n";
+        LOGINF << toHexPrefixed(RLP(_a.bytes())[0].data()) << "vs" << toHexPrefixed(RLP(_b.bytes())[0].data());
     }
 
     if (sha3(RLP(_a.bytes())[1].data()) != sha3(RLP(_b.bytes())[1].data()))
-        cnote << "txs mismatch\n";
+        LOGINF << "txs mismatch\n";
 
     if (sha3(RLP(_a.bytes())[2].data()) != sha3(RLP(_b.bytes())[2].data()))
-        cnote << "uncle list mismatch\n" << RLP(_a.bytes())[2].data() << "\n" << RLP(_b.bytes())[2].data();
+        LOGINF << "uncle list mismatch\n" << RLP(_a.bytes())[2].data() << "\n" << RLP(_b.bytes())[2].data();
 }
 
 mArray writeTransactionsToJson(TransactionQueue const& _txsQueue)
@@ -935,7 +935,7 @@ void checkJsonSectionForInvalidBlock(mObject& _blObj)
 void eraseJsonSectionForInvalidBlock(mObject& _blObj)
 {
     // if exception is thrown, RLP is invalid and no blockHeader, Transaction list, or Uncle list should be given
-    cnote << TestOutputHelper::get().testName() + " block is invalid!\n";
+    LOGINF << TestOutputHelper::get().testName() + " block is invalid!\n";
     _blObj.erase(_blObj.find("blockHeader"));
     _blObj.erase(_blObj.find("uncleHeaders"));
     _blObj.erase(_blObj.find("transactions"));
@@ -1009,7 +1009,7 @@ public:
         //skip wallet test as it takes too much time (250 blocks) run it with --all flag
         if (casename == "bcWalletTest" && !test::Options::get().all)
         {
-            cnote << "Skipping " << casename << " because --all option is not specified.\n";
+            LOGINF << "Skipping " << casename << " because --all option is not specified.\n";
             return;
         }
 
@@ -1037,7 +1037,7 @@ public:
         //skip this test suite if not run with --all flag (cases are already tested in state tests)
         if (!test::Options::get().all)
         {
-            cnote << "Skipping hive test " << casename << ". Use --all to run it.\n";
+            LOGINF << "Skipping hive test " << casename << ". Use --all to run it.\n";
             return;
         }
         suite.runAllTestsInFolder(casename);

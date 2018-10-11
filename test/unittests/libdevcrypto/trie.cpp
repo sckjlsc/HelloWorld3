@@ -55,14 +55,14 @@ BOOST_AUTO_TEST_CASE(fat_trie)
         ft.insert(h256("69", h256::FromHex, h256::AlignRight).ref(),
             h256("414243", h256::FromHex, h256::AlignRight).ref());
         for (auto i : ft)
-            cnote << i.first << i.second;
+            LOGINF << i.first << i.second;
         r = ft.root();
     }
     {
         FatGenericTrieDB<StateCacheDB> ft(&fm);
         ft.setRoot(r);
         for (auto i : ft)
-            cnote << i.first << i.second;
+            LOGINF << i.first << i.second;
     }
 }
 
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(hex_encoded_securetrie_test)
 {
     fs::path const testPath = test::getTestPath() / fs::path("TrieTests");
 
-    cnote << "Testing Secure Trie...";
+    LOGINF << "Testing Secure Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("hex_encoded_securetrie_test.json"));
     BOOST_REQUIRE_MESSAGE(s.length() > 0,
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE(hex_encoded_securetrie_test)
     js::read_string(s, v);
     for (auto& i : v.get_obj())
     {
-        cnote << i.first;
+        LOGINF << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
         for (auto i : o["in"].get_obj())
@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(trie_test_anyorder)
 {
     fs::path const testPath = test::getTestPath() / fs::path("TrieTests");
 
-    cnote << "Testing Trie...";
+    LOGINF << "Testing Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("trieanyorder.json"));
     BOOST_REQUIRE_MESSAGE(s.length() > 0,
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(trie_test_anyorder)
     js::read_string(s, v);
     for (auto& i : v.get_obj())
     {
-        cnote << i.first;
+        LOGINF << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
         for (auto i : o["in"].get_obj())
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(trie_tests_ordered)
 {
     fs::path const testPath = test::getTestPath() / fs::path("TrieTests");
 
-    cnote << "Testing Trie...";
+    LOGINF << "Testing Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("trietest.json"));
     BOOST_REQUIRE_MESSAGE(s.length() > 0,
@@ -213,7 +213,7 @@ BOOST_AUTO_TEST_CASE(trie_tests_ordered)
 
     for (auto& i : v.get_obj())
     {
-        cnote << i.first;
+        LOGINF << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
         vector<string> keysToBeDeleted;
@@ -308,41 +308,41 @@ bytes stringMapRlp256(StringMap const& _s)
 
 BOOST_AUTO_TEST_CASE(moreTrieTests)
 {
-    cnote << "Testing Trie more...";
+    LOGINF << "Testing Trie more...";
     // More tests...
     {
         StateCacheDB m;
         GenericTrieDB<StateCacheDB> t(&m);
         t.init();  // initialise as empty tree.
-        cnote << t;
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256(StringMap());
+        LOGINF << t;
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256(StringMap());
 
         t.insert(string("tesz"), string("test"));
-        cnote << t;
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256({{"test", "test"}});
+        LOGINF << t;
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256({{"test", "test"}});
 
         t.insert(string("tesa"), string("testy"));
-        cnote << t;
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256({{"test", "test"}, {"te", "testy"}});
-        cnote << t.at(string("test"));
-        cnote << t.at(string("te"));
-        cnote << t.at(string("t"));
+        LOGINF << t;
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256({{"test", "test"}, {"te", "testy"}});
+        LOGINF << t.at(string("test"));
+        LOGINF << t.at(string("te"));
+        LOGINF << t.at(string("t"));
 
         t.remove(string("te"));
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256({{"test", "test"}});
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256({{"test", "test"}});
 
         t.remove(string("test"));
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256(StringMap());
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256(StringMap());
     }
     {
         StateCacheDB m;
@@ -350,37 +350,37 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
         t.init();  // initialise as empty tree.
         t.insert(string("a"), string("A"));
         t.insert(string("b"), string("B"));
-        cnote << t;
-        cnote << m;
-        cnote << t.root();
-        cnote << stringMapHash256({{"b", "B"}, {"a", "A"}});
+        LOGINF << t;
+        LOGINF << m;
+        LOGINF << t.root();
+        LOGINF << stringMapHash256({{"b", "B"}, {"a", "A"}});
         bytes r(stringMapRlp256({{"b", "B"}, {"a", "A"}}));
-        cnote << RLP(r);
+        LOGINF << RLP(r);
     }
     {
         MemTrie t;
         t.insert("dog", "puppy");
-        cnote << hex << t.hash256();
+        LOGINF << hex << t.hash256();
         bytes r(t.rlp());
-        cnote << RLP(r);
+        LOGINF << RLP(r);
     }
     {
         MemTrie t;
         t.insert("bed", "d");
         t.insert("be", "e");
-        cnote << hex << t.hash256();
+        LOGINF << hex << t.hash256();
         bytes r(t.rlp());
-        cnote << RLP(r);
+        LOGINF << RLP(r);
     }
     {
-        cnote << hex << stringMapHash256({{"dog", "puppy"}, {"doe", "reindeer"}});
+        LOGINF << hex << stringMapHash256({{"dog", "puppy"}, {"doe", "reindeer"}});
         MemTrie t;
         t.insert("dog", "puppy");
         t.insert("doe", "reindeer");
-        cnote << hex << t.hash256();
+        LOGINF << hex << t.hash256();
         bytes r(t.rlp());
-        cnote << RLP(r);
-        cnote << toHex(t.rlp());
+        LOGINF << RLP(r);
+        LOGINF << toHex(t.rlp());
     }
     {
         StateCacheDB m;
@@ -395,12 +395,12 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
             t.insert(a, b);
             s[a] = b;
 
-            cnote << "/n-------------------------------";
-            cnote << a << " -> " << b;
-            cnote << d;
-            cnote << m;
-            cnote << d.root();
-            cnote << stringMapHash256(s);
+            LOGINF << "/n-------------------------------";
+            LOGINF << a << " -> " << b;
+            LOGINF << d;
+            LOGINF << m;
+            LOGINF << d.root();
+            LOGINF << stringMapHash256(s);
 
             BOOST_REQUIRE(d.check(true));
             BOOST_REQUIRE_EQUAL(t.hash256(), stringMapHash256(s));
@@ -418,12 +418,12 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
             t.remove(a);
             d.remove(string(a));
 
-            /*cnote << endl << "-------------------------------";
-            cnote << "X " << a;
-            cnote << d;
-            cnote << m;
-            cnote << d.root();
-            cnote << hash256(s);*/
+            /*LOGINF << endl << "-------------------------------";
+            LOGINF << "X " << a;
+            LOGINF << d;
+            LOGINF << m;
+            LOGINF << d.root();
+            LOGINF << hash256(s);*/
 
             BOOST_REQUIRE(d.check(true));
             BOOST_REQUIRE(t.at(a).empty());
@@ -468,7 +468,7 @@ std::string randomWord()
 
 BOOST_AUTO_TEST_CASE(trieLowerBound)
 {
-    cnote << "Stress-testing Trie.lower_bound...";
+    LOGINF << "Stress-testing Trie.lower_bound...";
     if (0)
     {
         StateCacheDB dm;
@@ -551,7 +551,7 @@ BOOST_AUTO_TEST_CASE(hashedLowerBound)
 
 BOOST_AUTO_TEST_CASE(trieStess)
 {
-    cnote << "Stress-testing Trie...";
+    LOGINF << "Stress-testing Trie...";
     {
         StateCacheDB m;
         StateCacheDB dm;
@@ -601,7 +601,8 @@ BOOST_AUTO_TEST_CASE(trieStess)
                     LOGWRN << "Broken:"
                            << d.root();  // Leaves an extension -> extension (3c1... -> 742...)
                                          //					for (auto i: dm.get())
-                                         //						LOGWRN << i.first << ": " << RLP(i.second);
+                                         //						LOGWRN << i.first << ": " <<
+                                         // RLP(i.second);
                     d.debugStructure(cerr);
 
                     d2.insert(k, v);
@@ -629,7 +630,7 @@ void perfTestTrie(char const* _name)
         StateCacheDB dm;
         Trie d(&dm);
         d.init();
-        cnote << "TriePerf " << _name << p;
+        LOGINF << "TriePerf " << _name << p;
         std::vector<h256> keys(1000);
         Timer t;
         size_t ki = 0;
@@ -642,20 +643,20 @@ void perfTestTrie(char const* _name)
             if (i % (p / 1000) == 0)
                 keys[ki++] = k;
         }
-        cnote << "Insert " << p << "values: " << t.elapsed();
+        LOGINF << "Insert " << p << "values: " << t.elapsed();
         t.restart();
         for (auto k : keys)
             d.at(k);
-        cnote << "Query 1000 values: " << t.elapsed();
+        LOGINF << "Query 1000 values: " << t.elapsed();
         t.restart();
         size_t i = 0;
         for (auto it = d.begin(); i < 1000 && it != d.end(); ++it, ++i)
             *it;
-        cnote << "Iterate 1000 values: " << t.elapsed();
+        LOGINF << "Iterate 1000 values: " << t.elapsed();
         t.restart();
         for (auto k : keys)
             d.remove(k);
-        cnote << "Remove 1000 values:" << t.elapsed() << "\n";
+        LOGINF << "Remove 1000 values:" << t.elapsed() << "\n";
     }
 }
 

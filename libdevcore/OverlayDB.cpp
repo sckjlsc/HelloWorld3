@@ -15,12 +15,12 @@
     along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <thread>
-#include <libdevcore/db.h>
-#include <libdevcore/Common.h>
-#include "SHA3.h"
 #include "OverlayDB.h"
+#include "SHA3.h"
 #include "TrieDB.h"
+#include <libdevcore/Common.h>
+#include <libdevcore/db.h>
+#include <thread>
 
 namespace dev
 {
@@ -50,22 +50,22 @@ void OverlayDB::commit()
     if (m_db)
     {
         auto writeBatch = m_db->createWriteBatch();
-//      cnote << "Committing nodes to disk DB:";
+//      LOGINF << "Committing nodes to disk DB:";
 #if DEV_GUARDED_DB
         DEV_READ_GUARDED(x_this)
 #endif
         {
-            for (auto const& i: m_main)
+            for (auto const& i : m_main)
             {
                 if (i.second.second)
                     writeBatch->insert(toSlice(i.first), toSlice(i.second.first));
-//              cnote << i.first << "#" << m_main[i.first].second;
+                //              LOGINF << i.first << "#" << m_main[i.first].second;
             }
-            for (auto const& i: m_aux)
+            for (auto const& i : m_aux)
                 if (i.second.second)
                 {
                     bytes b = i.first.asBytes();
-                    b.push_back(255);   // for aux
+                    b.push_back(255);  // for aux
                     writeBatch->insert(toSlice(b), toSlice(i.second.first));
                 }
         }
@@ -81,7 +81,7 @@ void OverlayDB::commit()
             {
                 if (i == 9)
                 {
-                	LOGWRN << "Fail writing to state database. Bombing out.";
+                    LOGWRN << "Fail writing to state database. Bombing out.";
                     exit(-1);
                 }
                 LOGWRN << "Error writing to state database: " << boost::diagnostic_information(ex);
@@ -106,10 +106,10 @@ bytes OverlayDB::lookupAux(h256 const& _h) const
         return ret;
 
     bytes b = _h.asBytes();
-    b.push_back(255);   // for aux
+    b.push_back(255);  // for aux
     std::string const v = m_db->lookup(toSlice(b));
     if (v.empty())
-    	LOGWRN << "Aux not found: " << _h;
+        LOGWRN << "Aux not found: " << _h;
 
     return asBytes(v);
 }
@@ -150,9 +150,9 @@ void OverlayDB::kill(h256 const& _h)
                 // No point node ref decreasing for EmptyTrie since we never bother incrementing it
                 // in the first place for empty storage tries.
                 if (_h != EmptyTrie)
-                	LOGINF << "Decreasing DB node ref count below zero with no DB node. Probably "
-                             "have a corrupt Trie."
-                          << _h;
+                    LOGINF << "Decreasing DB node ref count below zero with no DB node. Probably "
+                              "have a corrupt Trie."
+                           << _h;
                 // TODO: for 1.1: ref-counted triedb.
             }
         }
@@ -162,4 +162,4 @@ void OverlayDB::kill(h256 const& _h)
 #endif
 }
 
-}
+}  // namespace dev

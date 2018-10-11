@@ -36,12 +36,16 @@ void Ethash::init()
 Ethash::Ethash()
 {
     map<string, GenericFarm<EthashProofOfWork>::SealerDescriptor> sealers;
-    sealers["cpu"] = GenericFarm<EthashProofOfWork>::SealerDescriptor{&EthashCPUMiner::instances, [](GenericMiner<EthashProofOfWork>::ConstructionInfo ci){ return new EthashCPUMiner(ci); }};
+    sealers["cpu"] = GenericFarm<EthashProofOfWork>::SealerDescriptor{
+        &EthashCPUMiner::instances, [](GenericMiner<EthashProofOfWork>::ConstructionInfo ci) {
+            return new EthashCPUMiner(ci);
+        }};
     m_farm.setSealers(sealers);
-    m_farm.onSolutionFound([=](EthashProofOfWork::Solution const& sol)
-    {
+    m_farm.onSolutionFound([=](EthashProofOfWork::Solution const& sol) {
         std::unique_lock<Mutex> l(m_submitLock);
-//        cdebug << m_farm.work().seedHash << m_farm.work().headerHash << sol.nonce << EthashAux::eval(m_farm.work().seedHash, m_farm.work().headerHash, sol.nonce).value;
+        //        LOGDBG << m_farm.work().seedHash << m_farm.work().headerHash << sol.nonce <<
+        //        EthashAux::eval(m_farm.work().seedHash, m_farm.work().headerHash,
+        //        sol.nonce).value;
         setMixHash(m_sealing, sol.mixHash);
         setNonce(m_sealing, sol.nonce);
         if (!quickVerifySeal(m_sealing))
@@ -83,10 +87,13 @@ h256 Ethash::seedHash(BlockHeader const& _bi)
 
 StringHashMap Ethash::jsInfo(BlockHeader const& _bi) const
 {
-    return { { "nonce", toJS(nonce(_bi)) }, { "seedHash", toJS(seedHash(_bi)) }, { "mixHash", toJS(mixHash(_bi)) }, { "boundary", toJS(boundary(_bi)) }, { "difficulty", toJS(_bi.difficulty()) } };
+    return {{"nonce", toJS(nonce(_bi))}, {"seedHash", toJS(seedHash(_bi))},
+        {"mixHash", toJS(mixHash(_bi))}, {"boundary", toJS(boundary(_bi))},
+        {"difficulty", toJS(_bi.difficulty())}};
 }
 
-void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const
+void Ethash::verify(
+    Strictness _s, BlockHeader const& _bi, BlockHeader const& _parent, bytesConstRef _block) const
 {
     SealEngineFace::verify(_s, _bi, _parent, _block);
 
@@ -96,7 +103,8 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _p
         auto expected = calculateEthashDifficulty(chainParams(), _bi, _parent);
         auto difficulty = _bi.difficulty();
         if (difficulty != expected)
-            BOOST_THROW_EXCEPTION(InvalidDifficulty() << RequirementError((bigint)expected, (bigint)difficulty));
+            BOOST_THROW_EXCEPTION(
+                InvalidDifficulty() << RequirementError((bigint)expected, (bigint)difficulty));
     }
 
     // check it hashes according to proof of work or that it's the genesis block.
@@ -129,7 +137,8 @@ void Ethash::verify(Strictness _s, BlockHeader const& _bi, BlockHeader const& _p
     }
 }
 
-void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t, BlockHeader const& _header, u256 const& _startGasUsed) const
+void Ethash::verifyTransaction(ImportRequirements::value _ir, TransactionBase const& _t,
+    BlockHeader const& _header, u256 const& _startGasUsed) const
 {
     SealEngineFace::verifyTransaction(_ir, _t, _header, _startGasUsed);
 

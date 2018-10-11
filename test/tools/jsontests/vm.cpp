@@ -57,7 +57,7 @@ CallResult FakeExtVM::call(CallParameters& _p)
 
 h256 FakeExtVM::blockHash(u256 _number)
 {
-    cnote << "Warning: using fake blockhash code!\n";
+    LOGINF << "Warning: using fake blockhash code!\n";
     if (_number < envInfo().number() && _number >= (std::max<u256>(256, envInfo().number()) - 256))
         return sha3(toString(_number));
 
@@ -355,7 +355,7 @@ json_spirit::mValue VmTestSuite::doTests(json_spirit::mValue const& _input, bool
         }
         catch (VMException const&)
         {
-            cnote << "    Safe VM Exception\n";
+            LOGINF << "    Safe VM Exception\n";
             vmExceptionOccured = true;
         }
 

@@ -22,10 +22,10 @@
 
 #include <libethereum/Block.h>
 #include <libethereum/BlockChain.h>
-#include <test/tools/libtesteth/TestHelper.h>
-#include <test/tools/libtesteth/BlockChainHelper.h>
-#include <libethereum/GenesisInfo.h>
 #include <libethereum/ChainParams.h>
+#include <libethereum/GenesisInfo.h>
+#include <test/tools/libtesteth/BlockChainHelper.h>
+#include <test/tools/libtesteth/TestHelper.h>
 
 using namespace std;
 using namespace dev;
@@ -54,16 +54,20 @@ BOOST_AUTO_TEST_CASE(opendb)
 {
     TestBlock genesis = TestBlockChain::defaultGenesisBlock();
     TransientDirectory tempDirBlockchain;
-    ChainParams p(genesisInfo(eth::Network::TransitionnetTest), genesis.bytes(), genesis.accountMap());
+    ChainParams p(
+        genesisInfo(eth::Network::TransitionnetTest), genesis.bytes(), genesis.accountMap());
     BlockChain bc(p, tempDirBlockchain.path(), WithExisting::Kill);
-    auto is_critical = []( std::exception const& _e) { return string(_e.what()).find("DatabaseAlreadyOpen") != string::npos; };
-    BOOST_CHECK_EXCEPTION(BlockChain bc2(p, tempDirBlockchain.path(), WithExisting::Verify), DatabaseAlreadyOpen, is_critical);
+    auto is_critical = [](std::exception const& _e) {
+        return string(_e.what()).find("DatabaseAlreadyOpen") != string::npos;
+    };
+    BOOST_CHECK_EXCEPTION(BlockChain bc2(p, tempDirBlockchain.path(), WithExisting::Verify),
+        DatabaseAlreadyOpen, is_critical);
 }
 
 BOOST_AUTO_TEST_CASE(Mining_1_mineBlockWithTransaction)
 {
     TestBlockChain bc(TestBlockChain::defaultGenesisBlock());
-    TestTransaction tr = TestTransaction::defaultTransaction(1); //nonce = 1
+    TestTransaction tr = TestTransaction::defaultTransaction(1);  // nonce = 1
     TestBlock block;
     block.addTransaction(tr);
     block.mine(bc);
@@ -74,7 +78,7 @@ BOOST_AUTO_TEST_CASE(Mining_1_mineBlockWithTransaction)
 BOOST_AUTO_TEST_CASE(Mining_2_mineUncles)
 {
     TestBlockChain bc(TestBlockChain::defaultGenesisBlock());
-    TestTransaction tr = TestTransaction::defaultTransaction(1); //nonce = 1
+    TestTransaction tr = TestTransaction::defaultTransaction(1);  // nonce = 1
     TestBlock block;
     block.addTransaction(tr);
     block.mine(bc);
@@ -166,13 +170,16 @@ See https://github.com/ethereum/cpp-ethereum/issues/3059.
     BOOST_REQUIRE(importAttempt.first == ImportResult::UnknownParent);
 
     //Insert block5 to another blockchain
-    auto is_critical = []( std::exception const& _e) { cnote << _e.what(); return true; };
-    BOOST_CHECK_EXCEPTION(bcRef.insert(block2.bytes(), block2.receipts()), UnknownParent, is_critical);
+    auto is_critical = []( std::exception const& _e) { LOGINF << _e.what(); return true; };
+    BOOST_CHECK_EXCEPTION(bcRef.insert(block2.bytes(), block2.receipts()), UnknownParent,
+is_critical);
 
-    //Get status of block5 in the block queue based on block5's chain (block5 imported into queue but not imported into chain)
+    //Get status of block5 in the block queue based on block5's chain (block5 imported into queue
+but not imported into chain)
     //BlockQueue(bc2) changed by sync function of original bc
     QueueStatus status = uncleBlockQueue.blockStatus(block2.blockHeader().hash());
-    BOOST_REQUIRE_MESSAGE(status == QueueStatus::Bad, "Received Queue Status: " + toString(status) + " Expected Queue Status: " + toString(QueueStatus::Bad));
+    BOOST_REQUIRE_MESSAGE(status == QueueStatus::Bad, "Received Queue Status: " + toString(status) +
+" Expected Queue Status: " + toString(QueueStatus::Bad));
 }
 */
 
@@ -220,14 +227,19 @@ BOOST_AUTO_TEST_CASE(Mining_5_BlockFutureTime)
 
     BlockChain& bcRef = bc.interfaceUnsafe();
     bcRef.sync(uncleBlockQueue, bc.testGenesis().state().db(), unsigned(4));
-    BOOST_REQUIRE(uncleBlockQueue.blockStatus(uncleBlock.blockHeader().hash()) == QueueStatus::Unknown);
+    BOOST_REQUIRE(
+        uncleBlockQueue.blockStatus(uncleBlock.blockHeader().hash()) == QueueStatus::Unknown);
 
     pair<ImportResult, ImportRoute> importAttempt;
     importAttempt = bcRef.attemptImport(uncleBlock.bytes(), bc.testGenesis().state().db());
     BOOST_REQUIRE(importAttempt.first == ImportResult::FutureTimeKnown);
 
-    auto is_critical = []( std::exception const& _e) { cnote << _e.what(); return true; };
-    BOOST_CHECK_EXCEPTION(bcRef.insert(uncleBlock.bytes(), uncleBlock.receipts()), FutureTime, is_critical);
+    auto is_critical = [](std::exception const& _e) {
+        LOGINF << _e.what();
+        return true;
+    };
+    BOOST_CHECK_EXCEPTION(
+        bcRef.insert(uncleBlock.bytes(), uncleBlock.receipts()), FutureTime, is_critical);
 }
 
 bool onBadwasCalled = false;
@@ -238,11 +250,11 @@ void onBad(Exception&)
 
 BOOST_AUTO_TEST_CASE(attemptImport)
 {
-    //UnknownParent
-    //Success
-    //AlreadyKnown
-    //FutureTimeKnown
-    //Malformed
+    // UnknownParent
+    // Success
+    // AlreadyKnown
+    // FutureTimeKnown
+    // Malformed
 
     TestBlockChain bc(TestBlockChain::defaultGenesisBlock());
 
@@ -278,20 +290,26 @@ BOOST_AUTO_TEST_CASE(insert)
 
     BlockChain& bcRef = bc.interfaceUnsafe();
 
-    //Incorrect Receipt
+    // Incorrect Receipt
     ZeroGasPricer gp;
     Block bl = bcRef.genesisBlock(bc.testGenesis().state().db());
     bl.sync(bcRef);
     bl.sync(bcRef, block.transactionQueue(), gp);
 
-    //Receipt should be RLPStream
+    // Receipt should be RLPStream
     const bytes receipt = bl.receipt(0).rlp();
     bytesConstRef receiptRef(&receipt[0], receipt.size());
 
-    auto is_critical = [](std::exception const& _e) { return string(_e.what()).find("InvalidBlockFormat") != string::npos; };
-    BOOST_CHECK_EXCEPTION(bcRef.insert(bl.blockData(), receiptRef), InvalidBlockFormat, is_critical);
-    auto is_critical2 = [](std::exception const& _e) { return string(_e.what()).find("InvalidReceiptsStateRoot") != string::npos; };
-    BOOST_CHECK_EXCEPTION(bcRef.insert(block.bytes(), receiptRef), InvalidReceiptsStateRoot, is_critical2);
+    auto is_critical = [](std::exception const& _e) {
+        return string(_e.what()).find("InvalidBlockFormat") != string::npos;
+    };
+    BOOST_CHECK_EXCEPTION(
+        bcRef.insert(bl.blockData(), receiptRef), InvalidBlockFormat, is_critical);
+    auto is_critical2 = [](std::exception const& _e) {
+        return string(_e.what()).find("InvalidReceiptsStateRoot") != string::npos;
+    };
+    BOOST_CHECK_EXCEPTION(
+        bcRef.insert(block.bytes(), receiptRef), InvalidReceiptsStateRoot, is_critical2);
 
     BOOST_REQUIRE(bcRef.number() == 0);
 
@@ -309,8 +327,12 @@ BOOST_AUTO_TEST_CASE(insertException)
     block.mine(bc);
     bc.addBlock(block);
 
-    auto is_critical = [](std::exception const& _e) { cnote << _e.what(); return true; };
-    BOOST_CHECK_EXCEPTION(bcRef.insert(block.bytes(), block.receipts()), AlreadyHaveBlock, is_critical);
+    auto is_critical = [](std::exception const& _e) {
+        LOGINF << _e.what();
+        return true;
+    };
+    BOOST_CHECK_EXCEPTION(
+        bcRef.insert(block.bytes(), block.receipts()), AlreadyHaveBlock, is_critical);
 }
 
 BOOST_AUTO_TEST_CASE(rescue, *utf::expected_failures(1))
@@ -389,7 +411,7 @@ BOOST_AUTO_TEST_CASE(updateStats)
     BOOST_CHECK_EQUAL(stat.memTotal(), totalExpected);
     BOOST_CHECK_EQUAL(stat.memTransactionAddresses, 0);
 
-    //memchache size 33554432 - 3500 blocks before cache to be cleared
+    // memchache size 33554432 - 3500 blocks before cache to be cleared
     bcRef.garbageCollect(true);
 }
 
@@ -397,14 +419,17 @@ BOOST_AUTO_TEST_CASE(invalidJsonThrows)
 {
     h256 emptyStateRoot;
     /* Below, a comma is missing between fields. */
-    BOOST_CHECK_THROW(ChainParams("{ \"sealEngine\" : \"unknown\" \"accountStartNonce\" : \"3\" }", emptyStateRoot), json_spirit::Error_position);
+    BOOST_CHECK_THROW(ChainParams("{ \"sealEngine\" : \"unknown\" \"accountStartNonce\" : \"3\" }",
+                          emptyStateRoot),
+        json_spirit::Error_position);
 }
 
 BOOST_AUTO_TEST_CASE(unknownFieldThrows)
 {
     h256 emptyStateRoot;
     /* Below, an unknown field is passed. */
-    BOOST_CHECK_THROW(ChainParams("{ \"usuallyNotThere\" : \"unknown\" }", emptyStateRoot), UnknownField);
+    BOOST_CHECK_THROW(
+        ChainParams("{ \"usuallyNotThere\" : \"unknown\" }", emptyStateRoot), UnknownField);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

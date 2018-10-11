@@ -1,31 +1,31 @@
 /*
-	This file is part of cpp-ethereum.
+    This file is part of cpp-ethereum.
 
-	cpp-ethereum is free software: you can redistribute it and/or modify
-	it under the terms of the GNU General Public License as published by
-	the Free Software Foundation, either version 3 of the License, or
-	(at your option) any later version.
+    cpp-ethereum is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-	cpp-ethereum is distributed in the hope that it will be useful,
-	but WITHOUT ANY WARRANTY; without even the implied warranty of
-	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-	GNU General Public License for more details.
+    cpp-ethereum is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-	You should have received a copy of the GNU General Public License
-	along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
+    You should have received a copy of the GNU General Public License
+    along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <fstream>
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include "MemTrie.h"
 #include <json_spirit/JsonSpiritHeaders.h>
-#include <libdevcrypto/SecretStore.h>
 #include <libdevcore/CommonIO.h>
+#include <libdevcore/TransientDirectory.h>
 #include <libdevcore/TrieDB.h>
 #include <libdevcore/TrieHash.h>
-#include <libdevcore/TransientDirectory.h>
-#include "MemTrie.h"
+#include <libdevcrypto/SecretStore.h>
 #include <test/tools/libtesteth/TestOutputHelper.h>
+#include <boost/filesystem.hpp>
+#include <boost/test/unit_test.hpp>
+#include <fstream>
 using namespace std;
 using namespace dev;
 using namespace dev::test;
@@ -40,37 +40,39 @@ BOOST_FIXTURE_TEST_SUITE(KeyStore, TestOutputHelperFixture)
 
 BOOST_AUTO_TEST_CASE(basic_tests)
 {
-	fs::path testPath = test::getTestPath();
+    fs::path testPath = test::getTestPath();
 
-	testPath /= fs::path("KeyStoreTests");
+    testPath /= fs::path("KeyStoreTests");
 
-	cnote << "Testing Key Store...";
-	js::mValue v;
-	string const s = contentsString(testPath / fs::path("basic_tests.json"));
-	BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of 'KeyStoreTests/basic_tests.json' is empty. Have you cloned the 'tests' repo branch develop?");
-	js::read_string(s, v);
-	for (auto& i: v.get_obj())
-	{
-		cnote << i.first;
-		js::mObject& o = i.second.get_obj();
-		TransientDirectory tmpDir;
-		SecretStore store(tmpDir.path());
-		h128 u = store.readKeyContent(js::write_string(o["json"], false));
-		cdebug << "read uuid" << u;
-		bytesSec s = store.secret(u, [&](){ return o["password"].get_str(); });
-		cdebug << "got secret" << toHex(s.makeInsecure());
-		BOOST_REQUIRE_EQUAL(toHex(s.makeInsecure()), o["priv"].get_str());
-	}
+    LOGINF << "Testing Key Store...";
+    js::mValue v;
+    string const s = contentsString(testPath / fs::path("basic_tests.json"));
+    BOOST_REQUIRE_MESSAGE(s.length() > 0,
+        "Contents of 'KeyStoreTests/basic_tests.json' is empty. Have you cloned the 'tests' repo "
+        "branch develop?");
+    js::read_string(s, v);
+    for (auto& i : v.get_obj())
+    {
+        LOGINF << i.first;
+        js::mObject& o = i.second.get_obj();
+        TransientDirectory tmpDir;
+        SecretStore store(tmpDir.path());
+        h128 u = store.readKeyContent(js::write_string(o["json"], false));
+        LOGDBG << "read uuid" << u;
+        bytesSec s = store.secret(u, [&]() { return o["password"].get_str(); });
+        LOGDBG << "got secret" << toHex(s.makeInsecure());
+        BOOST_REQUIRE_EQUAL(toHex(s.makeInsecure()), o["priv"].get_str());
+    }
 }
 
 BOOST_AUTO_TEST_CASE(import_key_from_file)
 {
-	// Imports a key from an external file. Tests that the imported key is there
-	// and that the external file is not deleted.
-	TransientDirectory importDir;
-	string importFile = importDir.path() + "/import.json";
-	TransientDirectory storeDir;
-	string keyData = R"({
+    // Imports a key from an external file. Tests that the imported key is there
+    // and that the external file is not deleted.
+    TransientDirectory importDir;
+    string importFile = importDir.path() + "/import.json";
+    TransientDirectory storeDir;
+    string keyData = R"({
 		"version": 3,
 		"crypto": {
 			"ciphertext": "d69313b6470ac1942f75d72ebf8818a0d484ac78478a132ee081cd954d6bd7a9",
@@ -83,147 +85,159 @@ BOOST_AUTO_TEST_CASE(import_key_from_file)
 		},
 		"id": "abb67040-8dbe-0dad-fc39-2b082ef0ee5f"
 	})";
-	string password = "bar";
-	string priv = "0202020202020202020202020202020202020202020202020202020202020202";
-	writeFile(importFile, keyData);
+    string password = "bar";
+    string priv = "0202020202020202020202020202020202020202020202020202020202020202";
+    writeFile(importFile, keyData);
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importKey(importFile);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK(contentsString(importFile) == keyData);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-	}
-	fs::remove(importFile);
-	// now do it again to check whether SecretStore properly stored it on disk
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-	}
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importKey(importFile);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK(contentsString(importFile) == keyData);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+    }
+    fs::remove(importFile);
+    // now do it again to check whether SecretStore properly stored it on disk
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(import_secret)
 {
-	for (string const& password: {"foobar", ""})
-	{
-		TransientDirectory storeDir;
-		string priv = "0202020202020202020202020202020202020202020202020202020202020202";
+    for (string const& password : {"foobar", ""})
+    {
+        TransientDirectory storeDir;
+        string priv = "0202020202020202020202020202020202020202020202020202020202020202";
 
-		h128 uuid;
-		{
-			SecretStore store(storeDir.path());
-			BOOST_CHECK_EQUAL(store.keys().size(), 0);
-			uuid = store.importSecret(bytesSec(fromHex(priv)), password);
-			BOOST_CHECK(!!uuid);
-			BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-			BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		}
-		{
-			SecretStore store(storeDir.path());
-			BOOST_CHECK_EQUAL(store.keys().size(), 1);
-			BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		}
-	}
+        h128 uuid;
+        {
+            SecretStore store(storeDir.path());
+            BOOST_CHECK_EQUAL(store.keys().size(), 0);
+            uuid = store.importSecret(bytesSec(fromHex(priv)), password);
+            BOOST_CHECK(!!uuid);
+            BOOST_CHECK_EQUAL(
+                priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+            BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        }
+        {
+            SecretStore store(storeDir.path());
+            BOOST_CHECK_EQUAL(store.keys().size(), 1);
+            BOOST_CHECK_EQUAL(
+                priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        }
+    }
 }
 
 BOOST_AUTO_TEST_CASE(import_secret_bytesConstRef)
 {
-	for (string const& password: {"foobar", ""})
-	{
-		TransientDirectory storeDir;
-		string priv = "0202020202020202020202020202020202020202020202020202020202020202";
+    for (string const& password : {"foobar", ""})
+    {
+        TransientDirectory storeDir;
+        string priv = "0202020202020202020202020202020202020202020202020202020202020202";
 
-		h128 uuid;
-		{
-			SecretStore store(storeDir.path());
-			BOOST_CHECK_EQUAL(store.keys().size(), 0);
-			bytes privateBytes = fromHex(priv);
-			uuid = store.importSecret(&privateBytes, password);
-			BOOST_CHECK(!!uuid);
-			BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-			BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		}
-		{
-			SecretStore store(storeDir.path());
-			BOOST_CHECK_EQUAL(store.keys().size(), 1);
-			BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		}
-	}
+        h128 uuid;
+        {
+            SecretStore store(storeDir.path());
+            BOOST_CHECK_EQUAL(store.keys().size(), 0);
+            bytes privateBytes = fromHex(priv);
+            uuid = store.importSecret(&privateBytes, password);
+            BOOST_CHECK(!!uuid);
+            BOOST_CHECK_EQUAL(
+                priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+            BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        }
+        {
+            SecretStore store(storeDir.path());
+            BOOST_CHECK_EQUAL(store.keys().size(), 1);
+            BOOST_CHECK_EQUAL(
+                priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        }
+    }
 }
 
 BOOST_AUTO_TEST_CASE(wrong_password)
 {
-	TransientDirectory storeDir;
-	SecretStore store(storeDir.path());
-	string password = "foobar";
-	string priv = "0202020202020202020202020202020202020202020202020202020202020202";
+    TransientDirectory storeDir;
+    SecretStore store(storeDir.path());
+    string password = "foobar";
+    string priv = "0202020202020202020202020202020202020202020202020202020202020202";
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importSecret(bytesSec(fromHex(priv)), password);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		// password will not be queried
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return "abcdefg"; }).makeInsecure()));
-	}
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK(store.secret(uuid, [&](){ return "abcdefg"; }).empty());
-	}
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importSecret(bytesSec(fromHex(priv)), password);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        // password will not be queried
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return "abcdefg"; }).makeInsecure()));
+    }
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK(store.secret(uuid, [&]() { return "abcdefg"; }).empty());
+    }
 }
 
 BOOST_AUTO_TEST_CASE(recode)
 {
-	TransientDirectory storeDir;
-	SecretStore store(storeDir.path());
-	string password = "foobar";
-	string changedPassword = "abcdefg";
-	string priv = "0202020202020202020202020202020202020202020202020202020202020202";
+    TransientDirectory storeDir;
+    SecretStore store(storeDir.path());
+    string password = "foobar";
+    string changedPassword = "abcdefg";
+    string priv = "0202020202020202020202020202020202020202020202020202020202020202";
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importSecret(bytesSec(fromHex(priv)), password);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-	}
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK(store.secret(uuid, [&](){ return "abcdefg"; }).empty());
-		BOOST_CHECK(store.recode(uuid, changedPassword, [&](){ return password; }));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return changedPassword; }).makeInsecure()));
-		store.clearCache();
-		BOOST_CHECK(store.secret(uuid, [&](){ return password; }).empty());
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return changedPassword; }).makeInsecure()));
-	}
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK(store.secret(uuid, [&](){ return password; }).empty());
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return changedPassword; }).makeInsecure()));
-	}
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importSecret(bytesSec(fromHex(priv)), password);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+    }
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK(store.secret(uuid, [&]() { return "abcdefg"; }).empty());
+        BOOST_CHECK(store.recode(uuid, changedPassword, [&]() { return password; }));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return changedPassword; }).makeInsecure()));
+        store.clearCache();
+        BOOST_CHECK(store.secret(uuid, [&]() { return password; }).empty());
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return changedPassword; }).makeInsecure()));
+    }
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK(store.secret(uuid, [&]() { return password; }).empty());
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return changedPassword; }).makeInsecure()));
+    }
 }
 
 BOOST_AUTO_TEST_CASE(keyImport_PBKDF2SHA256)
 {
-	// Imports a key from an external file. Tests that the imported key is there
-	// and that the external file is not deleted.
-	TransientDirectory importDir;
-	string importFile = importDir.path() + "/import.json";
-	TransientDirectory storeDir;
-	string keyData = R"({
+    // Imports a key from an external file. Tests that the imported key is there
+    // and that the external file is not deleted.
+    TransientDirectory importDir;
+    string importFile = importDir.path() + "/import.json";
+    TransientDirectory storeDir;
+    string keyData = R"({
 		"version": 3,
 		"crypto": {
 			"ciphertext": "5318b4d5bcd28de64ee5559e671353e16f075ecae9f99c7a79a38af5f869aa46",
@@ -236,33 +250,34 @@ BOOST_AUTO_TEST_CASE(keyImport_PBKDF2SHA256)
 		},
 		"id": "3198bc9c-6672-5ab3-d995-4942343ae5b6"
 	})";
-	string password = "testpassword";
-	string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
-	writeFile(importFile, keyData);
+    string password = "testpassword";
+    string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
+    writeFile(importFile, keyData);
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importKey(importFile);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK_EQUAL(uuid, h128("3198bc9c66725ab3d9954942343ae5b6"));
-		BOOST_CHECK(contentsString(importFile) == keyData);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
-	}
-	fs::remove(importFile);
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importKey(importFile);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK_EQUAL(uuid, h128("3198bc9c66725ab3d9954942343ae5b6"));
+        BOOST_CHECK(contentsString(importFile) == keyData);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
+    }
+    fs::remove(importFile);
 }
 
 BOOST_AUTO_TEST_CASE(keyImport_Scrypt)
 {
-	// Imports a key from an external file. Tests that the imported key is there
-	// and that the external file is not deleted.
-	TransientDirectory importDir;
-	string importFile = importDir.path() + "/import.json";
-	TransientDirectory storeDir;
-	string keyData = R"({
+    // Imports a key from an external file. Tests that the imported key is there
+    // and that the external file is not deleted.
+    TransientDirectory importDir;
+    string importFile = importDir.path() + "/import.json";
+    TransientDirectory storeDir;
+    string keyData = R"({
 		"version": 3,
 		"crypto": {
 			"ciphertext": "d172bf743a674da9cdad04534d56926ef8358534d458fffccd4e6ad2fbde479c",
@@ -275,33 +290,34 @@ BOOST_AUTO_TEST_CASE(keyImport_Scrypt)
 		},
 		"id": "3198bc9c-6672-5ab3-d995-4942343ae5b6"
 	})";
-	string password = "testpassword";
-	string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
-	writeFile(importFile, keyData);
+    string password = "testpassword";
+    string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
+    writeFile(importFile, keyData);
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importKey(importFile);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK_EQUAL(uuid, h128("3198bc9c66725ab3d9954942343ae5b6"));
-		BOOST_CHECK(contentsString(importFile) == keyData);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
-	}
-	fs::remove(importFile);
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importKey(importFile);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK_EQUAL(uuid, h128("3198bc9c66725ab3d9954942343ae5b6"));
+        BOOST_CHECK(contentsString(importFile) == keyData);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
+    }
+    fs::remove(importFile);
 }
 
-BOOST_AUTO_TEST_CASE(keyImport__ScryptV2, *utf::expected_failures(2) *utf::disabled())
+BOOST_AUTO_TEST_CASE(keyImport__ScryptV2, *utf::expected_failures(2) * utf::disabled())
 {
-	// Imports a key from an external file. Tests that the imported key is there
-	// and that the external file is not deleted.
-	TransientDirectory importDir;
-	string importFile = importDir.path() + "/import.json";
-	TransientDirectory storeDir;
-	string keyData = R"({
+    // Imports a key from an external file. Tests that the imported key is there
+    // and that the external file is not deleted.
+    TransientDirectory importDir;
+    string importFile = importDir.path() + "/import.json";
+    TransientDirectory storeDir;
+    string keyData = R"({
 		"version": 2,
 		"crypto": {
 			"ciphertext": "07533e172414bfa50e99dba4a0ce603f654ebfa1ff46277c3e0c577fdc87f6bb4e4fe16c5a94ce6ce14cfa069821ef9b",
@@ -314,23 +330,24 @@ BOOST_AUTO_TEST_CASE(keyImport__ScryptV2, *utf::expected_failures(2) *utf::disab
 		},
 		"id": "0498f19a-59db-4d54-ac95-33901b4f1870"
 	})";
-	string password = "testpassword";
-	string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
-	writeFile(importFile, keyData);
+    string password = "testpassword";
+    string priv = "7a28b5ba57c53603b0b07b56bba752f7784bf506fa95edc395f5cf6c7514fe9d";
+    writeFile(importFile, keyData);
 
-	h128 uuid;
-	{
-		SecretStore store(storeDir.path());
-		BOOST_CHECK_EQUAL(store.keys().size(), 0);
-		uuid = store.importKey(importFile);
-		BOOST_CHECK(!!uuid);
-		BOOST_CHECK_EQUAL(uuid, h128("0498f19a59db4d54ac9533901b4f1870"));
-		BOOST_CHECK(contentsString(importFile) == keyData);
-		BOOST_CHECK_EQUAL(priv, toHex(store.secret(uuid, [&](){ return password; }).makeInsecure()));
-		BOOST_CHECK_EQUAL(store.keys().size(), 1);
-		BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
-	}
-	fs::remove(importFile);
+    h128 uuid;
+    {
+        SecretStore store(storeDir.path());
+        BOOST_CHECK_EQUAL(store.keys().size(), 0);
+        uuid = store.importKey(importFile);
+        BOOST_CHECK(!!uuid);
+        BOOST_CHECK_EQUAL(uuid, h128("0498f19a59db4d54ac9533901b4f1870"));
+        BOOST_CHECK(contentsString(importFile) == keyData);
+        BOOST_CHECK_EQUAL(
+            priv, toHex(store.secret(uuid, [&]() { return password; }).makeInsecure()));
+        BOOST_CHECK_EQUAL(store.keys().size(), 1);
+        BOOST_CHECK_EQUAL(store.address(uuid), Address("008aeeda4d805471df9b2a5b0f38a0c3bcba786b"));
+    }
+    fs::remove(importFile);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

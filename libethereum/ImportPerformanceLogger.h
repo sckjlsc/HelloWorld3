@@ -52,7 +52,7 @@ public:
 		double const totalElapsed = m_totalTimer.elapsed();
 		if (totalElapsed > 0.5)
 		{
-            cdebug << "SLOW IMPORT: { " << constructReport(totalElapsed, _additionalValues) << " }";
+            LOGDBG << "SLOW IMPORT: { " << constructReport(totalElapsed, _additionalValues) << " }";
         }
 	}
 

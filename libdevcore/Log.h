@@ -109,20 +109,16 @@ BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(
         (boost::log::keywords::severity = SEVERITY)(boost::log::keywords::channel = CHANNEL))
 
 
-inline std::string location(const std::string& path) {
-  return path.substr(path.find_last_of("/\\") + 1);
+inline std::string core_location(const std::string& path)
+{
+    return path.substr(path.find_last_of("/\\") + 1);
 }
 
-#define LOGTRC \
-		cctrace << "[" << location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGDBG \
-		ccdebug << "[" << location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGINF \
-		ccnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGWRN \
-		ccwarn << "[" << location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGERR \
-		ccerror << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGTRC cctrace << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGDBG ccdebug << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGINF ccnote << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGWRN ccwarn << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGERR ccerror << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
 
 struct LoggingOptions
 {
@@ -418,5 +414,5 @@ inline boost::log::formatting_ostream& operator<<(
     _strm << constValue;
     return _strm;
 }
-}
+}  // namespace log
 }  // namespace boost
