@@ -152,13 +152,13 @@ void EthereumPeer::requestBlockHeaders(
 {
     if (m_asking != Asking::Nothing)
     {
-        LOG(m_logger) << "Asking headers while requesting " << ::toString(m_asking);
+        LOGEPDBG << "Asking headers while requesting " << ::toString(m_asking);
     }
     setAsking(Asking::BlockHeaders);
     RLPStream s;
     prep(s, GetBlockHeadersPacket, 4) << _startNumber << _count << _skip << (_reverse ? 1 : 0);
-    LOG(m_logger) << "Requesting " << _count << " block headers starting from " << _startNumber
-                  << (_reverse ? " in reverse" : "");
+    LOGEPDBG << "Requesting " << _count << " block headers starting from " << _startNumber
+             << (_reverse ? " in reverse" : "");
     m_lastAskedHeaders = _count;
     sealAndSend(s);
 }
@@ -168,13 +168,13 @@ void EthereumPeer::requestBlockHeaders(
 {
     if (m_asking != Asking::Nothing)
     {
-        LOG(m_logger) << "Asking headers while requesting " << ::toString(m_asking);
+        LOGEPDBG << "Asking headers while requesting " << ::toString(m_asking);
     }
     setAsking(Asking::BlockHeaders);
     RLPStream s;
     prep(s, GetBlockHeadersPacket, 4) << _startHash << _count << _skip << (_reverse ? 1 : 0);
-    LOG(m_logger) << "Requesting " << _count << " block headers starting from " << _startHash
-                  << (_reverse ? " in reverse" : "");
+    LOGEPDBG << "Requesting " << _count << " block headers starting from " << _startHash
+             << (_reverse ? " in reverse" : "");
     m_lastAskedHeaders = _count;
     sealAndSend(s);
 }
@@ -200,8 +200,8 @@ void EthereumPeer::requestByHashes(
 {
     if (m_asking != Asking::Nothing)
     {
-        LOG(m_logger) << "Asking " << ::toString(_asking) << " while requesting "
-                      << ::toString(m_asking);
+        LOGEPDBG << "Asking " << ::toString(_asking) << " while requesting "
+                 << ::toString(m_asking);
     }
     setAsking(_asking);
     if (_hashes.size())
@@ -272,9 +272,8 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             if (m_peerCapabilityVersion == m_hostProtocolVersion)
                 m_protocolVersion = m_hostProtocolVersion;
 
-            LOG(m_logger) << "Status: " << m_protocolVersion << " / " << m_networkId << " / "
-                          << m_genesisHash << ", TD: " << m_totalDifficulty << " = "
-                          << m_latestHash;
+            LOGEPDBG << "Status: " << m_protocolVersion << " / " << m_networkId << " / "
+                     << m_genesisHash << ", TD: " << m_totalDifficulty << " = " << m_latestHash;
             setIdle();
             observer->onPeerStatus(dynamic_pointer_cast<EthereumPeer>(
                 dynamic_pointer_cast<EthereumPeer>(shared_from_this())));
@@ -320,8 +319,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
         case BlockHeadersPacket:
         {
             if (m_asking != Asking::BlockHeaders)
-                LOG(m_loggerImpolite)
-                    << "Peer giving us block headers when we didn't ask for them.";
+                LOGEPIMPDBG << "Peer giving us block headers when we didn't ask for them.";
             else
             {
                 setIdle();
@@ -337,7 +335,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
 
             if (!count)
             {
-                LOG(m_loggerImpolite) << "Zero-entry GetBlockBodies: Not replying.";
+                LOGEPIMPDBG << "Zero-entry GetBlockBodies: Not replying.";
                 addRating(-10);
                 break;
             }
@@ -354,7 +352,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
         case BlockBodiesPacket:
         {
             if (m_asking != Asking::BlockBodies)
-                LOG(m_loggerImpolite) << "Peer giving us block bodies when we didn't ask for them.";
+                LOGEPIMPDBG << "Peer giving us block bodies when we didn't ask for them.";
             else
             {
                 setIdle();
@@ -394,7 +392,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             unsigned count = static_cast<unsigned>(_r.itemCount());
             if (!count)
             {
-                LOG(m_loggerImpolite) << "Zero-entry GetNodeData: Not replying.";
+                LOGEPIMPDBG << "Zero-entry GetNodeData: Not replying.";
                 addRating(-10);
                 break;
             }
@@ -415,7 +413,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             unsigned count = static_cast<unsigned>(_r.itemCount());
             if (!count)
             {
-                LOG(m_loggerImpolite) << "Zero-entry GetReceipts: Not replying.";
+                LOGEPIMPDBG << "Zero-entry GetReceipts: Not replying.";
                 addRating(-10);
                 break;
             }
@@ -433,7 +431,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
         case NodeDataPacket:
         {
             if (m_asking != Asking::NodeData)
-                LOG(m_loggerImpolite) << "Peer giving us node data when we didn't ask for them.";
+                LOGEPIMPDBG << "Peer giving us node data when we didn't ask for them.";
             else
             {
                 setIdle();
@@ -445,7 +443,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
         case ReceiptsPacket:
         {
             if (m_asking != Asking::Receipts)
-                LOG(m_loggerImpolite) << "Peer giving us receipts when we didn't ask for them.";
+                LOGEPIMPDBG << "Peer giving us receipts when we didn't ask for them.";
             else
             {
                 setIdle();

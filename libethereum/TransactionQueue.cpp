@@ -156,11 +156,11 @@ ImportResult TransactionQueue::manageImport_WITH_LOCK(
         }
         // If valid, append to transactions.
         insertCurrent_WITH_LOCK(make_pair(_h, _transaction));
-        LOG(m_loggerDetail) << "Queued vaguely legit-looking transaction " << _h;
+        LOGTQDBG << "Queued vaguely legit-looking transaction " << _h;
 
         while (m_current.size() > m_limit)
         {
-            LOG(m_loggerDetail) << "Dropping out of bounds transaction " << _h;
+            LOGTQDBG << "Dropping out of bounds transaction " << _h;
             remove_WITH_LOCK(m_current.rbegin()->transaction.sha3());
         }
 
@@ -168,12 +168,12 @@ ImportResult TransactionQueue::manageImport_WITH_LOCK(
     }
     catch (Exception const& _e)
     {
-        LOG(m_loggerDetail) << "Ignoring invalid transaction: " << diagnostic_information(_e);
+        LOGTQDBG << "Ignoring invalid transaction: " << diagnostic_information(_e);
         return ImportResult::Malformed;
     }
     catch (std::exception const& _e)
     {
-        LOG(m_loggerDetail) << "Ignoring invalid transaction: " << _e.what();
+        LOGTQDBG << "Ignoring invalid transaction: " << _e.what();
         return ImportResult::Malformed;
     }
 
@@ -312,8 +312,8 @@ void TransactionQueue::makeCurrent_WITH_LOCK(Transaction const& _t)
         // TODO: priority queue for future transactions
         // For now just drop random chain end
         --m_futureSize;
-        LOG(m_loggerDetail) << "Dropping out of bounds future transaction "
-                            << m_future.begin()->second.rbegin()->second.transaction.sha3();
+        LOGTQDBG << "Dropping out of bounds future transaction "
+                 << m_future.begin()->second.rbegin()->second.transaction.sha3();
         m_future.begin()->second.erase(--m_future.begin()->second.end());
         if (m_future.begin()->second.empty())
             m_future.erase(m_future.begin());
@@ -366,8 +366,8 @@ void TransactionQueue::enqueue(RLP const& _data, h512 const& _nodeId)
         {
             if (m_unverified.size() >= c_maxVerificationQueueSize)
             {
-                LOG(m_logger) << "Transaction verification queue is full. Dropping "
-                              << itemCount - i << " transactions";
+                LOGTQINF << "Transaction verification queue is full. Dropping " << itemCount - i
+                         << " transactions";
                 break;
             }
             m_unverified.emplace_back(UnverifiedTransaction(_data[i].data(), _nodeId));

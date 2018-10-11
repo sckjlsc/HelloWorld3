@@ -30,8 +30,8 @@ namespace dev
 {
 namespace eth
 {
-
-void SnapshotImporter::import(SnapshotStorageFace const& _snapshotStorage, h256 const& /*_genesisHash*/)
+void SnapshotImporter::import(
+    SnapshotStorageFace const& _snapshotStorage, h256 const& /*_genesisHash*/)
 {
     bytes const manifestBytes = _snapshotStorage.readManifest();
     RLP manifest(manifestBytes);
@@ -45,7 +45,7 @@ void SnapshotImporter::import(SnapshotStorageFace const& _snapshotStorage, h256 
 
     u256 const blockNumber = manifest[4].toInt<u256>(RLP::VeryStrict);
     h256 const blockHash = manifest[5].toHash<h256>(RLP::VeryStrict);
-    LOG(m_logger) << "Importing snapshot for block " << blockNumber << " block hash " << blockHash;
+    LOGSPINF << "Importing snapshot for block " << blockNumber << " block hash " << blockHash;
 
     h256s const stateChunkHashes = manifest[1].toVector<h256>(RLP::VeryStrict);
     h256 const stateRoot = manifest[3].toHash<h256>(RLP::VeryStrict);
@@ -55,14 +55,15 @@ void SnapshotImporter::import(SnapshotStorageFace const& _snapshotStorage, h256 
     importBlockChunks(_snapshotStorage, blockChunkHashes);
 }
 
-void SnapshotImporter::importStateChunks(SnapshotStorageFace const& _snapshotStorage, h256s const& _stateChunkHashes, h256 const& _stateRoot)
+void SnapshotImporter::importStateChunks(SnapshotStorageFace const& _snapshotStorage,
+    h256s const& _stateChunkHashes, h256 const& _stateRoot)
 {
     size_t const stateChunkCount = _stateChunkHashes.size();
 
     size_t chunksImported = 0;
     size_t accountsImported = 0;
 
-    for (auto const& stateChunkHash: _stateChunkHashes)
+    for (auto const& stateChunkHash : _stateChunkHashes)
     {
         std::string const chunkUncompressed = _snapshotStorage.readChunk(stateChunkHash);
 
@@ -91,7 +92,7 @@ void SnapshotImporter::importStateChunks(SnapshotStorageFace const& _snapshotSto
 
             RLP const storage = account[4];
             std::map<h256, bytes> storageMap;
-            for (auto hashAndValue: storage)
+            for (auto hashAndValue : storage)
             {
                 if (hashAndValue.itemCount() != 2)
                     BOOST_THROW_EXCEPTION(InvalidStateChunkData());
@@ -133,25 +134,27 @@ void SnapshotImporter::importStateChunks(SnapshotStorageFace const& _snapshotSto
         m_stateImporter.commitStateDatabase();
 
         ++chunksImported;
-        LOG(m_logger) << "Imported chunk " << chunksImported << " (" << accounts.itemCount()
-                      << " account records) Total account records imported: " << accountsImported;
-        LOG(m_logger) << stateChunkCount - chunksImported << " chunks left to import";
+        LOGSPINF << "Imported chunk " << chunksImported << " (" << accounts.itemCount()
+                 << " account records) Total account records imported: " << accountsImported;
+        LOGSPINF << stateChunkCount - chunksImported << " chunks left to import";
     }
 
     // check root
-    LOG(m_logger) << "Chunks imported: " << chunksImported;
-    LOG(m_logger) << "Account records imported: " << accountsImported;
-    LOG(m_logger) << "Reconstructed state root: " << m_stateImporter.stateRoot();
-    LOG(m_logger) << "Manifest state root:      " << _stateRoot;
+    LOGSPINF << "Chunks imported: " << chunksImported;
+    LOGSPINF << "Account records imported: " << accountsImported;
+    LOGSPINF << "Reconstructed state root: " << m_stateImporter.stateRoot();
+    LOGSPINF << "Manifest state root:      " << _stateRoot;
     if (m_stateImporter.stateRoot() != _stateRoot)
         BOOST_THROW_EXCEPTION(StateTrieReconstructionFailed());
 }
 
-void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotStorage, h256s const& _blockChunkHashes)
+void SnapshotImporter::importBlockChunks(
+    SnapshotStorageFace const& _snapshotStorage, h256s const& _blockChunkHashes)
 {
     size_t const blockChunkCount = _blockChunkHashes.size();
     size_t blockChunksImported = 0;
-    // chunks are in decreasing order of first block number, so we go backwards to start from the oldest block
+    // chunks are in decreasing order of first block number, so we go backwards to start from the
+    // oldest block
     for (auto chunk = _blockChunkHashes.rbegin(); chunk != _blockChunkHashes.rend(); ++chunk)
     {
         std::string const chunkUncompressed = _snapshotStorage.readChunk(*chunk);
@@ -166,8 +169,8 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
         if (!firstBlockNumber || !firstBlockHash || !firstBlockDifficulty)
             BOOST_THROW_EXCEPTION(InvalidBlockChunkData());
 
-        LOG(m_logger) << "chunk first block " << firstBlockNumber << " first block hash "
-                      << firstBlockHash << " difficulty " << firstBlockDifficulty;
+        LOGSPINF << "chunk first block " << firstBlockNumber << " first block hash "
+                 << firstBlockHash << " difficulty " << firstBlockDifficulty;
 
         size_t const itemCount = blockChunk.itemCount();
         h256 parentHash = firstBlockHash;
@@ -187,11 +190,13 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
 
             h256 const blockStateRoot = abridgedBlock[1].toHash<h256>(RLP::VeryStrict);
             RLP transactions = abridgedBlock[8];
-            h256 const txRoot = trieRootOver(transactions.itemCount(), [&](unsigned i) { return rlp(i); }, [&](unsigned i) { return transactions[i].data().toBytes(); });
+            h256 const txRoot =
+                trieRootOver(transactions.itemCount(), [&](unsigned i) { return rlp(i); },
+                    [&](unsigned i) { return transactions[i].data().toBytes(); });
             RLP uncles = abridgedBlock[9];
             RLP receipts = blockAndReceipts[1];
             std::vector<bytesConstRef> receiptsVector;
-            for (auto receipt: receipts)
+            for (auto receipt : receipts)
                 receiptsVector.push_back(receipt.data());
             h256 const receiptsRoot = orderedTrieRoot(receiptsVector);
             h256 const unclesHash = sha3(uncles.data());
@@ -210,17 +215,18 @@ void SnapshotImporter::importBlockChunks(SnapshotStorageFace const& _snapshotSto
             Ethash::setNonce(header, abridgedBlock[11].toHash<Nonce>(RLP::VeryStrict));
 
             totalDifficulty += difficulty;
-            m_blockChainImporter.importBlock(header, transactions, uncles, receipts, totalDifficulty);
+            m_blockChainImporter.importBlock(
+                header, transactions, uncles, receipts, totalDifficulty);
 
             parentHash = header.hash();
         }
 
-        LOG(m_logger) << "Imported chunk " << *chunk << " (" << itemCount - 3 << " blocks)";
-        LOG(m_logger) << blockChunkCount - (++blockChunksImported) << " chunks left to import";
+        LOGSPINF << "Imported chunk " << *chunk << " (" << itemCount - 3 << " blocks)";
+        LOGSPINF << blockChunkCount - (++blockChunksImported) << " chunks left to import";
 
         if (chunk == _blockChunkHashes.rbegin())
         {
-            LOG(m_logger) << "Setting chain start block: " << firstBlockNumber + 1;
+            LOGSPINF << "Setting chain start block: " << firstBlockNumber + 1;
             m_blockChainImporter.setChainStartBlockNumber(firstBlockNumber + 1);
         }
     }

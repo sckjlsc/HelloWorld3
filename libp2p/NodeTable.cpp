@@ -103,9 +103,8 @@ shared_ptr<NodeEntry> NodeTable::addNode(Node const& _node, NodeRelation _relati
     {
         DEV_GUARDED(x_nodes)
         {
-            LOG(m_logger) << "Sending public key discovery Ping to "
-                          << (bi::udp::endpoint)_node.endpoint
-                          << " (Advertising: " << (bi::udp::endpoint)m_node.endpoint << ")";
+            LOGNTDBG << "Sending public key discovery Ping to " << (bi::udp::endpoint)_node.endpoint
+                     << " (Advertising: " << (bi::udp::endpoint)m_node.endpoint << ")";
         }
         DEV_GUARDED(x_pubkDiscoverPings)
         {
@@ -121,7 +120,7 @@ shared_ptr<NodeEntry> NodeTable::addNode(Node const& _node, NodeRelation _relati
 
     auto ret = make_shared<NodeEntry>(m_node.id, _node.id, _node.endpoint);
     DEV_GUARDED(x_nodes) { m_nodes[_node.id] = ret; }
-    LOG(m_logger) << "addNode pending for " << _node.endpoint;
+    LOGNTDBG << "addNode pending for " << _node.endpoint;
     ping(_node.endpoint);
     return ret;
 }
@@ -173,7 +172,7 @@ void NodeTable::doDiscover(
 
     if (_round == s_maxSteps)
     {
-        LOG(m_logger) << "Terminating discover after " << _round << " rounds.";
+        LOGNTDBG << "Terminating discover after " << _round << " rounds.";
         doDiscovery();
         return;
     }
@@ -197,7 +196,7 @@ void NodeTable::doDiscover(
 
     if (tried.empty())
     {
-        LOG(m_logger) << "Terminating discover after " << _round << " rounds.";
+        LOGNTDBG << "Terminating discover after " << _round << " rounds.";
         doDiscovery();
         return;
     }
@@ -326,8 +325,8 @@ void NodeTable::noteActiveNode(Public const& _pubk, bi::udp::endpoint const& _en
     shared_ptr<NodeEntry> newNode = nodeEntry(_pubk);
     if (newNode && !newNode->pending)
     {
-        LOG(m_logger) << "Noting active node: " << _pubk << " " << _endpoint.address().to_string()
-                      << ":" << _endpoint.port();
+        LOGNTDBG << "Noting active node: " << _pubk << " " << _endpoint.address().to_string() << ":"
+                 << _endpoint.port();
         newNode->endpoint.setAddress(_endpoint.address());
         newNode->endpoint.setUdpPort(_endpoint.port());
 
@@ -389,7 +388,7 @@ void NodeTable::dropNode(shared_ptr<NodeEntry> _n)
     }
 
     // notify host
-    LOG(m_logger) << "p2p.nodes.drop " << _n->id;
+    LOGNTDBG << "p2p.nodes.drop " << _n->id;
     if (m_nodeEventHandler)
         m_nodeEventHandler->appendEvent(_n->id, NodeEntryDropped);
 }
@@ -408,8 +407,8 @@ void NodeTable::onReceived(UDPSocketFace*, bi::udp::endpoint const& _from, bytes
             return;
         if (packet->isExpired())
         {
-            LOG(m_logger) << "Invalid packet (timestamp in the past) from "
-                          << _from.address().to_string() << ":" << _from.port();
+            LOGNTDBG << "Invalid packet (timestamp in the past) from "
+                     << _from.address().to_string() << ":" << _from.port();
             return;
         }
 
@@ -472,7 +471,7 @@ void NodeTable::onReceived(UDPSocketFace*, bi::udp::endpoint const& _from, bytes
                 m_node.endpoint.setUdpPort(in.destination.udpPort());
             }
 
-            LOG(m_logger) << "PONG from " << in.sourceid << " " << _from;
+            LOGNTDBG << "PONG from " << in.sourceid << " " << _from;
             break;
         }
 
@@ -535,13 +534,13 @@ void NodeTable::onReceived(UDPSocketFace*, bi::udp::endpoint const& _from, bytes
     }
     catch (std::exception const& _e)
     {
-        LOG(m_logger) << "Exception processing message from " << _from.address().to_string() << ":"
-                      << _from.port() << ": " << _e.what();
+        LOGNTDBG << "Exception processing message from " << _from.address().to_string() << ":"
+                 << _from.port() << ": " << _e.what();
     }
     catch (...)
     {
-        LOG(m_logger) << "Exception processing message from " << _from.address().to_string() << ":"
-                      << _from.port();
+        LOGNTDBG << "Exception processing message from " << _from.address().to_string() << ":"
+                 << _from.port();
     }
 }
 
@@ -591,7 +590,7 @@ void NodeTable::doDiscovery()
         if (_ec.value() == boost::asio::error::operation_aborted || m_timers.isStopped())
             return;
 
-        LOG(m_logger) << "performing random discovery";
+        LOGNTDBG << "performing random discovery";
         NodeID randNodeId;
         crypto::Nonce::get().ref().copyTo(randNodeId.ref().cropped(0, h256::size));
         crypto::Nonce::get().ref().copyTo(randNodeId.ref().cropped(h256::size, h256::size));

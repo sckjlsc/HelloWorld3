@@ -21,23 +21,21 @@
 
 #pragma once
 
-#include <condition_variable>
-#include <thread>
-#include <deque>
-#include <boost/thread.hpp>
-#include <libdevcore/Common.h>
-#include <libdevcore/Log.h>
-#include <libethcore/Common.h>
-#include <libdevcore/Guards.h>
-#include <libethcore/BlockHeader.h>
 #include "VerifiedBlock.h"
+#include <libdevcore/Common.h>
+#include <libdevcore/Guards.h>
+#include <libdevcore/Log.h>
+#include <libethcore/BlockHeader.h>
+#include <libethcore/Common.h>
+#include <boost/thread.hpp>
+#include <condition_variable>
+#include <deque>
+#include <thread>
 
 namespace dev
 {
-
 namespace eth
 {
-
 class BlockChain;
 
 struct BlockQueueStatus
@@ -60,16 +58,16 @@ enum class QueueStatus
     Unknown
 };
 
-std::ostream& operator<< (std::ostream& os, QueueStatus const& obj);
+std::ostream& operator<<(std::ostream& os, QueueStatus const& obj);
 
-template<class T>
+template <class T>
 class SizedBlockQueue
 {
 public:
     std::size_t count() const { return m_queue.size(); }
 
     std::size_t size() const { return m_size; }
-    
+
     bool isEmpty() const { return m_queue.empty(); }
 
     h256 nextHash() const { return m_queue.front().verified.info.sha3Uncles(); }
@@ -109,7 +107,7 @@ public:
         return !removed.empty();
     }
 
-    template<class Pred>
+    template <class Pred>
     std::vector<T> removeIf(Pred _pred)
     {
         auto const removedBegin = std::remove_if(m_queue.begin(), m_queue.end(), _pred);
@@ -137,7 +135,8 @@ private:
         return [&_hash](T const& _t) { return _t.verified.info.sha3Uncles() == _hash; };
     }
 
-    std::vector<T> removeRange(typename std::deque<T>::iterator _begin, typename std::deque<T>::iterator _end)
+    std::vector<T> removeRange(
+        typename std::deque<T>::iterator _begin, typename std::deque<T>::iterator _end)
     {
         std::vector<T> ret(std::make_move_iterator(_begin), std::make_move_iterator(_end));
 
@@ -149,10 +148,10 @@ private:
     }
 
     std::deque<T> m_queue;
-    std::atomic<size_t> m_size = {0};	///< Tracks total size in bytes
+    std::atomic<size_t> m_size = {0};  ///< Tracks total size in bytes
 };
 
-template<class KeyType>
+template <class KeyType>
 class SizedBlockMap
 {
 public:
@@ -195,7 +194,8 @@ private:
     // map of key to (hash, block data) pairs
     using BlockMultimap = std::multimap<KeyType, std::pair<h256, bytes>>;
 
-    std::vector<std::pair<h256, bytes>> removeRange(typename BlockMultimap::iterator _begin, typename BlockMultimap::iterator _end)
+    std::vector<std::pair<h256, bytes>> removeRange(
+        typename BlockMultimap::iterator _begin, typename BlockMultimap::iterator _end)
     {
         std::vector<std::pair<h256, bytes>> removed;
         std::size_t removedSize = 0;
@@ -210,9 +210,9 @@ private:
 
         return removed;
     }
-        
+
     BlockMultimap m_map;
-    std::atomic<size_t> m_size = {0};	///< Tracks total size in bytes
+    std::atomic<size_t> m_size = {0};  ///< Tracks total size in bytes
 };
 
 /**
@@ -220,7 +220,7 @@ private:
  * Sorts them ready for blockchain insertion (with the BlockChain::sync() method).
  * @threadsafe
  */
-class BlockQueue: HasInvariants
+class BlockQueue : HasInvariants
 {
 public:
     BlockQueue();
@@ -231,25 +231,36 @@ public:
     /// Import a block into the queue.
     ImportResult import(bytesConstRef _block, bool _isOurs = false);
 
-    /// Notes that time has moved on and some blocks that used to be "in the future" may no be valid.
+    /// Notes that time has moved on and some blocks that used to be "in the future" may no be
+    /// valid.
     void tick();
 
-    /// Grabs at most @a _max of the blocks that are ready, giving them in the correct order for insertion into the chain.
-    /// Don't forget to call doneDrain() once you're done importing.
+    /// Grabs at most @a _max of the blocks that are ready, giving them in the correct order for
+    /// insertion into the chain. Don't forget to call doneDrain() once you're done importing.
     void drain(std::vector<VerifiedBlock>& o_out, unsigned _max);
 
-    /// Must be called after a drain() call. Notes that the drained blocks have been imported into the blockchain, so we can forget about them.
+    /// Must be called after a drain() call. Notes that the drained blocks have been imported into
+    /// the blockchain, so we can forget about them.
     /// @returns true iff there are additional blocks ready to be processed.
     bool doneDrain(h256s const& _knownBad = h256s());
 
-    /// Notify the queue that the chain has changed and a new block has attained 'ready' status (i.e. is in the chain).
-    void noteReady(h256 const& _b) { WriteGuard l(m_lock); noteReady_WITH_LOCK(_b); }
+    /// Notify the queue that the chain has changed and a new block has attained 'ready' status
+    /// (i.e. is in the chain).
+    void noteReady(h256 const& _b)
+    {
+        WriteGuard l(m_lock);
+        noteReady_WITH_LOCK(_b);
+    }
 
     /// Force a retry of all the blocks with unknown parents.
     void retryAllUnknown();
 
     /// Get information on the items queued.
-    std::pair<unsigned, unsigned> items() const { ReadGuard l(m_lock); return std::make_pair(m_readySet.size(), m_unknownSet.size()); }
+    std::pair<unsigned, unsigned> items() const
+    {
+        ReadGuard l(m_lock);
+        return std::make_pair(m_readySet.size(), m_unknownSet.size());
+    }
 
     /// Clear everything.
     void clear();
@@ -258,7 +269,11 @@ public:
     void stop();
 
     /// Return first block with an unknown parent.
-    h256 firstUnknown() const { ReadGuard l(m_lock); return m_unknownSet.size() ? *m_unknownSet.begin() : h256(); }
+    h256 firstUnknown() const
+    {
+        ReadGuard l(m_lock);
+        return m_unknownSet.size() ? *m_unknownSet.begin() : h256();
+    }
 
     /// Get some infomration on the current status.
     BlockQueueStatus status() const;
@@ -269,11 +284,15 @@ public:
     Handler<> onReady(std::function<void(void)> _t) { return m_onReady.add(_t); }
     Handler<> onRoomAvailable(std::function<void(void)> _t) { return m_onRoomAvailable.add(_t); }
 
-    template <class T> void setOnBad(T const& _t) { m_onBad = _t; }
+    template <class T>
+    void setOnBad(T const& _t)
+    {
+        m_onBad = _t;
+    }
 
     bool knownFull() const;
     bool unknownFull() const;
-    u256 difficulty() const;	// Total difficulty of queueud blocks
+    u256 difficulty() const;  // Total difficulty of queueud blocks
     bool isActive() const;
 
 private:
@@ -298,37 +317,54 @@ private:
     std::size_t unknownSize() const;
     std::size_t unknownCount() const;
 
-    BlockChain const* m_bc;												///< The blockchain into which our imports go.
+    BlockChain const* m_bc;  ///< The blockchain into which our imports go.
 
-    mutable boost::shared_mutex m_lock;									///< General lock for the sets, m_future and m_unknown.
-    h256Hash m_drainingSet;												///< All blocks being imported.
-    h256Hash m_readySet;												///< All blocks ready for chain import.
-    h256Hash m_unknownSet;												///< Set of all blocks whose parents are not ready/in-chain.
-    SizedBlockMap<h256> m_unknown;										///< For blocks that have an unknown parent; we map their parent hash to the block stuff, and insert once the block appears.
-    h256Hash m_knownBad;												///< Set of blocks that we know will never be valid.
-    SizedBlockMap<time_t> m_future;										///< Set of blocks that are not yet valid. Ordered by timestamp
-    h256Hash m_futureSet;  ///< Set of all blocks that are not yet valid.
-    Signal<> m_onReady;													///< Called when a subsequent call to import blocks will return a non-empty container. Be nice and exit fast.
-    Signal<> m_onRoomAvailable;											///< Called when space for new blocks becomes availabe after a drain. Be nice and exit fast.
+    mutable boost::shared_mutex m_lock;  ///< General lock for the sets, m_future and m_unknown.
+    h256Hash m_drainingSet;              ///< All blocks being imported.
+    h256Hash m_readySet;                 ///< All blocks ready for chain import.
+    h256Hash m_unknownSet;          ///< Set of all blocks whose parents are not ready/in-chain.
+    SizedBlockMap<h256> m_unknown;  ///< For blocks that have an unknown parent; we map their parent
+                                    ///< hash to the block stuff, and insert once the block appears.
+    h256Hash m_knownBad;            ///< Set of blocks that we know will never be valid.
+    SizedBlockMap<time_t> m_future;  ///< Set of blocks that are not yet valid. Ordered by timestamp
+    h256Hash m_futureSet;            ///< Set of all blocks that are not yet valid.
+    Signal<> m_onReady;  ///< Called when a subsequent call to import blocks will return a non-empty
+                         ///< container. Be nice and exit fast.
+    Signal<> m_onRoomAvailable;  ///< Called when space for new blocks becomes availabe after a
+                                 ///< drain. Be nice and exit fast.
 
-    mutable Mutex m_verification;										///< Mutex that allows writing to m_verified, m_verifying and m_unverified.
-    std::condition_variable m_moreToVerify;								///< Signaled when m_unverified has a new entry.
-    SizedBlockQueue<VerifiedBlock> m_verified;								///< List of blocks, in correct order, verified and ready for chain-import.
-    SizedBlockQueue<VerifiedBlock> m_verifying;								///< List of blocks being verified; as long as the block component (bytes) is empty, it's not finished.
-    SizedBlockQueue<UnverifiedBlock> m_unverified;							///< List of <block hash, parent hash, block data> in correct order, ready for verification.
+    mutable Mutex m_verification;  ///< Mutex that allows writing to m_verified, m_verifying and
+                                   ///< m_unverified.
+    std::condition_variable m_moreToVerify;      ///< Signaled when m_unverified has a new entry.
+    SizedBlockQueue<VerifiedBlock> m_verified;   ///< List of blocks, in correct order, verified and
+                                                 ///< ready for chain-import.
+    SizedBlockQueue<VerifiedBlock> m_verifying;  ///< List of blocks being verified; as long as the
+                                                 ///< block component (bytes) is empty, it's not
+                                                 ///< finished.
+    SizedBlockQueue<UnverifiedBlock> m_unverified;  ///< List of <block hash, parent hash, block
+                                                    ///< data> in correct order, ready for
+                                                    ///< verification.
 
-    std::vector<std::thread> m_verifiers;								///< Threads who only verify.
-    std::atomic<bool> m_deleting = {false};								///< Exit condition for verifiers.
+    std::vector<std::thread> m_verifiers;    ///< Threads who only verify.
+    std::atomic<bool> m_deleting = {false};  ///< Exit condition for verifiers.
 
-    std::function<void(Exception&)> m_onBad;							///< Called if we have a block that doesn't verify.
-    u256 m_difficulty;													///< Total difficulty of blocks in the queue
-    u256 m_drainingDifficulty;											///< Total difficulty of blocks in draining
+    std::function<void(Exception&)> m_onBad;  ///< Called if we have a block that doesn't verify.
+    u256 m_difficulty;                        ///< Total difficulty of blocks in the queue
+    u256 m_drainingDifficulty;                ///< Total difficulty of blocks in draining
 
-    Logger m_logger{createLogger(VerbosityDebug, "bq")};
-    Logger m_loggerDetail{createLogger(VerbosityTrace, "bq")};
+    Logger m_bq_dbg{createLogger(VerbosityDebug, "bq")};
+    Logger m_bq_trc{createLogger(VerbosityTrace, "bq")};
+
+    inline std::string bq_location(const std::string& path) const
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+#define LOGBQTRC LOG(m_bq_trc) << "[" << bq_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGBQDBG LOG(m_bq_dbg) << "[" << bq_location(__FILE__) << ":" << __LINE__ << "] "
 };
 
 std::ostream& operator<<(std::ostream& _out, BlockQueueStatus const& _s);
 
-}
-}
+}  // namespace eth
+}  // namespace dev

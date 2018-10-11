@@ -21,22 +21,21 @@
 
 #pragma once
 
-#include <mutex>
 #include <array>
 #include <memory>
+#include <mutex>
 #include <utility>
 
-#include <libdevcore/RLP.h>
+#include "CommonNet.h"
 #include <libdevcore/Guards.h>
+#include <libdevcore/RLP.h>
 #include <libethcore/Common.h>
 #include <libp2p/PeerCapability.h>
-#include "CommonNet.h"
 
 namespace dev
 {
 namespace eth
 {
-
 class EthereumPeerObserverFace
 {
 public:
@@ -50,7 +49,8 @@ public:
 
     virtual void onPeerBlockBodies(std::shared_ptr<EthereumPeer> _peer, RLP const& _r) = 0;
 
-    virtual void onPeerNewHashes(std::shared_ptr<EthereumPeer> _peer, std::vector<std::pair<h256, u256>> const& _hashes) = 0;
+    virtual void onPeerNewHashes(
+        std::shared_ptr<EthereumPeer> _peer, std::vector<std::pair<h256, u256>> const& _hashes) = 0;
 
     virtual void onPeerNewBlock(std::shared_ptr<EthereumPeer> _peer, RLP const& _r) = 0;
 
@@ -66,7 +66,8 @@ class EthereumHostDataFace
 public:
     virtual ~EthereumHostDataFace() = default;
 
-    virtual std::pair<bytes, unsigned> blockHeaders(RLP const& _blockId, unsigned _maxHeaders, u256 _skip, bool _reverse) const = 0;
+    virtual std::pair<bytes, unsigned> blockHeaders(
+        RLP const& _blockId, unsigned _maxHeaders, u256 _skip, bool _reverse) const = 0;
 
     virtual std::pair<bytes, unsigned> blockBodies(RLP const& _blockHashes) const = 0;
 
@@ -82,8 +83,8 @@ public:
  */
 class EthereumPeer : public p2p::PeerCapability
 {
-    friend class EthereumHost; //TODO: remove this
-    friend class BlockChainSync; //TODO: remove this
+    friend class EthereumHost;    // TODO: remove this
+    friend class BlockChainSync;  // TODO: remove this
 
 public:
     /// Basic constructor.
@@ -102,7 +103,10 @@ public:
     /// How many message types do we have?
     static unsigned messageCount() { return PacketCount; }
 
-    void init(unsigned _hostProtocolVersion, u256 _hostNetworkId, u256 _chainTotalDifficulty, h256 _chainCurrentHash, h256 _chainGenesisHash, std::shared_ptr<EthereumHostDataFace> _hostData, std::shared_ptr<EthereumPeerObserverFace> _observer);
+    void init(unsigned _hostProtocolVersion, u256 _hostNetworkId, u256 _chainTotalDifficulty,
+        h256 _chainCurrentHash, h256 _chainGenesisHash,
+        std::shared_ptr<EthereumHostDataFace> _hostData,
+        std::shared_ptr<EthereumPeerObserverFace> _observer);
 
     p2p::NodeID id() const { return session()->id(); }
 
@@ -110,7 +114,8 @@ public:
     void setIdle();
 
     /// Request hashes for given parent hash.
-    void requestBlockHeaders(h256 const& _startHash, unsigned _count, unsigned _skip, bool _reverse);
+    void requestBlockHeaders(
+        h256 const& _startHash, unsigned _count, unsigned _skip, bool _reverse);
     void requestBlockHeaders(unsigned _startNumber, unsigned _count, unsigned _skip, bool _reverse);
 
     /// Request specified blocks from peer.
@@ -141,10 +146,15 @@ private:
     bool interpretCapabilityPacket(unsigned _id, RLP const& _r) override;
 
     /// Request status. Called from constructor
-    void requestStatus(u256 _hostNetworkId, u256 _chainTotalDifficulty, h256 _chainCurrentHash, h256 _chainGenesisHash);
+    void requestStatus(u256 _hostNetworkId, u256 _chainTotalDifficulty, h256 _chainCurrentHash,
+        h256 _chainGenesisHash);
 
     /// Clear all known transactions.
-    void clearKnownTransactions() { std::lock_guard<std::mutex> l(x_knownTransactions); m_knownTransactions.clear(); }
+    void clearKnownTransactions()
+    {
+        std::lock_guard<std::mutex> l(x_knownTransactions);
+        m_knownTransactions.clear();
+    }
 
     // Request of type _packetType with _hashes as input parameters
     void requestByHashes(h256s const& _hashes, Asking _asking, SubprotocolPacketType _packetType);
@@ -178,28 +188,38 @@ private:
     std::atomic<time_t> m_lastAsk;
 
     /// These are determined through either a Status message or from NewBlock.
-    h256 m_latestHash;						///< Peer's latest block's hash that we know about or default null value if no need to sync.
-    u256 m_totalDifficulty;					///< Peer's latest block's total difficulty.
-    h256 m_genesisHash;						///< Peer's genesis hash
+    h256 m_latestHash;  ///< Peer's latest block's hash that we know about or default null value if
+                        ///< no need to sync.
+    u256 m_totalDifficulty;  ///< Peer's latest block's total difficulty.
+    h256 m_genesisHash;      ///< Peer's genesis hash
 
-    u256 const m_peerCapabilityVersion;			///< Protocol version this peer supports received as capability
+    u256 const m_peerCapabilityVersion;  ///< Protocol version this peer supports received as
+                                         ///< capability
     /// Have we received a GetTransactions packet that we haven't yet answered?
     bool m_requireTransactions = false;
 
     Mutex x_knownBlocks;
-    h256Hash m_knownBlocks;					///< Blocks that the peer already knows about (that don't need to be sent to them).
+    h256Hash m_knownBlocks;  ///< Blocks that the peer already knows about (that don't need to be
+                             ///< sent to them).
     Mutex x_knownTransactions;
-    h256Hash m_knownTransactions;			///< Transactions that the peer already knows of.
-    unsigned m_unknownNewBlocks = 0;		///< Number of unknown NewBlocks received from this peer
-    unsigned m_lastAskedHeaders = 0;		///< Number of hashes asked
+    h256Hash m_knownTransactions;     ///< Transactions that the peer already knows of.
+    unsigned m_unknownNewBlocks = 0;  ///< Number of unknown NewBlocks received from this peer
+    unsigned m_lastAskedHeaders = 0;  ///< Number of hashes asked
 
     std::weak_ptr<EthereumPeerObserverFace> m_observer;
     std::weak_ptr<EthereumHostDataFace> m_hostData;
 
-    Logger m_logger{createLogger(VerbosityDebug, "peer")};
+    Logger m_ep{createLogger(VerbosityDebug, "peer")};
     /// Logger for messages about impolite behaivour of peers.
-    Logger m_loggerImpolite{createLogger(VerbosityDebug, "impolite")};
+    Logger m_ep_imp{createLogger(VerbosityDebug, "impolite")};
+    inline std::string ep_location(const std::string& path) const
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+#define LOGEPDBG LOG(m_ep) << "[" << ep_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGEPIMPDBG LOG(m_ep_imp) << "[" << ep_location(__FILE__) << ":" << __LINE__ << "] "
 };
 
-}
-}
+}  // namespace eth
+}  // namespace dev

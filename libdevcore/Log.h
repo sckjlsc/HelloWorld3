@@ -114,11 +114,11 @@ inline std::string core_location(const std::string& path)
     return path.substr(path.find_last_of("/\\") + 1);
 }
 
-#define LOGTRC cctrace << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGDBG ccdebug << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGINF ccnote << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGWRN ccwarn << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
-#define LOGERR ccerror << "[" << core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGTRC cctrace << "[" << dev::core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGDBG ccdebug << "[" << dev::core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGINF ccnote << "[" << dev::core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGWRN ccwarn << "[" << dev::core_location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGERR ccerror << "[" << dev::core_location(__FILE__) << ":" << __LINE__ << "] "
 
 struct LoggingOptions
 {

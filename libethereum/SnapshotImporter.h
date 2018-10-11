@@ -27,10 +27,8 @@
 
 namespace dev
 {
-
 namespace eth
 {
-
 class Client;
 class BlockChainImporterFace;
 class SnapshotStorageFace;
@@ -39,19 +37,29 @@ class StateImporterFace;
 class SnapshotImporter
 {
 public:
-    SnapshotImporter(StateImporterFace& _stateImporter, BlockChainImporterFace& _bcImporter): m_stateImporter(_stateImporter), m_blockChainImporter(_bcImporter) {}
+    SnapshotImporter(StateImporterFace& _stateImporter, BlockChainImporterFace& _bcImporter)
+      : m_stateImporter(_stateImporter), m_blockChainImporter(_bcImporter)
+    {}
 
     void import(SnapshotStorageFace const& _snapshotStorage, h256 const& _genesisHash);
 
 private:
-    void importStateChunks(SnapshotStorageFace const& _snapshotStorage, h256s const& _stateChunkHashes, h256 const& _stateRoot);
-    void importBlockChunks(SnapshotStorageFace const& _snapshotStorage, h256s const& _blockChunkHashes);
+    void importStateChunks(SnapshotStorageFace const& _snapshotStorage,
+        h256s const& _stateChunkHashes, h256 const& _stateRoot);
+    void importBlockChunks(
+        SnapshotStorageFace const& _snapshotStorage, h256s const& _blockChunkHashes);
 
     StateImporterFace& m_stateImporter;
     BlockChainImporterFace& m_blockChainImporter;
 
-    Logger m_logger{createLogger(VerbosityInfo, "snap")};
+    Logger m_sp{createLogger(VerbosityInfo, "snap")};
+    inline std::string sp_location(const std::string& path) const
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+#define LOGSPINF LOG(m_sp) << "[" << sp_location(__FILE__) << ":" << __LINE__ << "] "
 };
 
-}
-}
+}  // namespace eth
+}  // namespace dev

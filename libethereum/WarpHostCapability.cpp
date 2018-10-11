@@ -63,6 +63,16 @@ public:
             m_downloadFiber->join();
     }
 
+private:
+    Logger m_wpo{createLogger(VerbosityInfo, "snap")};
+
+    inline std::string wpo_location(const std::string& path) const
+    {
+        return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+#define LOGWPOINF LOG(m_wpo) << "[" << wpo_location(__FILE__) << ":" << __LINE__ << "] "
+public:
     void onPeerStatus(std::shared_ptr<WarpPeerCapability> _peer) override
     {
         boost::fibers::fiber checkPeerFiber(
@@ -111,10 +121,10 @@ public:
             writeFile((boost::filesystem::path(m_snapshotDir) / toHex(hash)).string(),
                 data.toBytesConstRef());
 
-            LOG(m_logger) << "Saved chunk " << hash << " Chunks left: " << m_neededChunks.size()
-                          << " Requested chunks: " << m_requestedChunks.size();
+            LOGWPOINF << "Saved chunk " << hash << " Chunks left: " << m_neededChunks.size()
+                      << " Requested chunks: " << m_requestedChunks.size();
             if (m_neededChunks.empty() && m_requestedChunks.empty())
-                LOG(m_logger) << "Snapshot download complete!";
+                LOGWPOINF << "Snapshot download complete!";
         }
         else
             m_neededChunks.push_back(askedHash);
@@ -165,7 +175,8 @@ private:
         RLP manifestRlp(manifestBytes);
         if (!validateManifest(manifestRlp))
         {
-            // TODO try disconnecting instead of disabling; disabled peer still occupies the peer slot
+            // TODO try disconnecting instead of disabling; disabled peer still occupies the peer
+            // slot
             _peer->disable("Invalid snapshot manifest.");
             return;
         }
@@ -256,9 +267,9 @@ private:
         u256 const blockNumber = manifest[4].toInt<u256>();
         h256 const blockHash = manifest[5].toHash<h256>();
 
-        LOG(m_logger) << "MANIFEST: "
-                      << "version " << version << " state root " << stateRoot << " block number "
-                      << blockNumber << " block hash " << blockHash;
+        LOGWPOINF << "MANIFEST: "
+                  << "version " << version << " state root " << stateRoot << " block number "
+                  << blockNumber << " block hash " << blockHash;
 
         // TODO handle writeFile failure
         writeFile((boost::filesystem::path(m_snapshotDir) / "MANIFEST").string(), manifest.data());
@@ -274,7 +285,7 @@ private:
             while (!peer)
                 peer = m_freePeers.value_pop().lock();
 
-            LOG(m_logger) << "Requesting chunk " << chunkHash;
+            LOGWPOINF << "Requesting chunk " << chunkHash;
             peer->requestData(chunkHash);
 
             m_requestedChunks[peer] = chunkHash;
@@ -302,8 +313,6 @@ private:
         m_requestedChunks;
 
     std::unique_ptr<boost::fibers::fiber> m_downloadFiber;
-
-    Logger m_logger{createLogger(VerbosityInfo, "snap")};
 };
 
 }  // namespace
@@ -320,8 +329,7 @@ WarpHostCapability::WarpHostCapability(p2p::Host const& _host, BlockChain const&
     m_peerObserver(
         _snapshotDownloadPath.empty() ? nullptr : createPeerObserver(_snapshotDownloadPath)),
     m_lastTick(0)
-{
-}
+{}
 
 WarpHostCapability::~WarpHostCapability()
 {
