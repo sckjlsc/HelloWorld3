@@ -50,7 +50,7 @@ Session::Session(Host* _h, unique_ptr<RLPXFrameCoder>&& _io, std::shared_ptr<RLP
     DEV_GUARDED(x_info)
         m_info.socketId = m_socket->ref().native_handle();
 
-   std::cout << "sancai ClientVersion:" << _info.clientVersion << std::endl;
+    LOGNETINF << "sancai ClientVersion:" << _info.clientVersion;
 }
 
 Session::~Session()

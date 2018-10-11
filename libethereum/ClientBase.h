@@ -188,6 +188,12 @@ protected:
     std::map<unsigned, ClientWatch> m_watches;				///< Each and every watch - these reference a filter.
 
     Logger m_loggerWatch{createLogger(VerbosityDebug, "watch")};
+    inline std::string location(const std::string& path) {
+      return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+    #define LOGCLTWCH \
+		LOG(m_loggerWatch) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 };
 
 }}

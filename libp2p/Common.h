@@ -92,6 +92,17 @@ NET_GLOBAL_LOGGER(netlog, VerbosityDebug)
 NET_GLOBAL_LOGGER(netdetails, VerbosityTrace)
 #define cnetdetails LOG(dev::p2p::g_netdetailsLogger::get())
 
+inline std::string location(const std::string& path) {
+  return path.substr(path.find_last_of("/\\") + 1);
+}
+
+#define LOGNETTRC \
+		cnetdetails << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGNETDBG \
+		cnetlog << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGNETINF \
+		cnetnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+
 enum PacketType
 {
     HelloPacket = 0,

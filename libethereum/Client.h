@@ -374,6 +374,15 @@ protected:
 
     Logger m_logger{createLogger(VerbosityInfo, "client")};
     Logger m_loggerDetail{createLogger(VerbosityDebug, "client")};
+
+    inline std::string location(const std::string& path) {
+      return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+    #define LOGCLTDBG \
+		LOG(m_loggerDetail) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+    #define LOGCLTINF \
+		LOG(m_logger) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 };
 
 }

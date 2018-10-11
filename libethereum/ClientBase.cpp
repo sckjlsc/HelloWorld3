@@ -225,7 +225,7 @@ unsigned ClientBase::installWatch(LogFilter const& _f, Reaping _r)
         Guard l(x_filtersWatches);
         if (!m_filters.count(h))
         {
-            LOG(m_loggerWatch) << "FFF" << _f << h;
+        	LOGCLTWCH << "FFF" << _f << h;
             m_filters.insert(make_pair(h, _f));
         }
     }
@@ -239,7 +239,7 @@ unsigned ClientBase::installWatch(h256 _h, Reaping _r)
         Guard l(x_filtersWatches);
         ret = m_watches.size() ? m_watches.rbegin()->first + 1 : 0;
         m_watches[ret] = ClientWatch(_h, _r);
-        LOG(m_loggerWatch) << "+++" << ret << _h;
+        LOGCLTWCH << "+++" << ret << _h;
     }
 #if INITIAL_STATE_AS_CHANGES
     auto ch = logs(ret);
@@ -255,7 +255,7 @@ unsigned ClientBase::installWatch(h256 _h, Reaping _r)
 
 bool ClientBase::uninstallWatch(unsigned _i)
 {
-    LOG(m_loggerWatch) << "XXX" << _i;
+	LOGCLTWCH << "XXX" << _i;
 
     Guard l(x_filtersWatches);
     

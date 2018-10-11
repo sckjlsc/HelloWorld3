@@ -305,13 +305,13 @@ void RLPXHandshake::transition(boost::system::error_code _ech)
             << m_host->listenPort()
             << m_host->id();
 
-        std::cout << "sancai protoVersion:" << dev::p2p::c_protocolVersion << std::endl;
-        std::cout << "sancai clientVersion:" << m_host->m_clientVersion << std::endl;
+        LOGNETINF << "sancai protoVersion:" << dev::p2p::c_protocolVersion;
+        LOGNETINF << "sancai clientVersion:" << m_host->m_clientVersion;
         for(auto& item: m_host->caps()) {
-        	std::cout << "sancai caps:" << item.first << " val:" << item.second << std::endl;
+        	LOGNETINF << "sancai caps:" << item.first << " val:" << item.second;
         }
-        std::cout << "sancai listenPort:" << m_host->listenPort() << std::endl;
-        std::cout << "sancai hostId:" << m_host->id() << std::endl;
+        LOGNETINF << "sancai listenPort:" << m_host->listenPort();
+        LOGNETINF << "sancai hostId:" << m_host->id();
         bytes packet;
         s.swapOut(packet);
         m_io->writeSingleFramePacket(&packet, m_handshakeOutBuffer);

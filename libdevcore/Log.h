@@ -109,6 +109,21 @@ BOOST_LOG_INLINE_GLOBAL_LOGGER_DEFAULT(
         (boost::log::keywords::severity = SEVERITY)(boost::log::keywords::channel = CHANNEL))
 
 
+inline std::string location(const std::string& path) {
+  return path.substr(path.find_last_of("/\\") + 1);
+}
+
+#define LOGTRC \
+		ctrace << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGDBG \
+		cdebug << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGINF \
+		cnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGWRN \
+		cwarn << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+#define LOGERR \
+		cerror << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+
 struct LoggingOptions
 {
     int verbosity = VerbosityInfo;

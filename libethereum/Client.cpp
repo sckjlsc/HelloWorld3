@@ -641,20 +641,20 @@ void Client::noteChanged(h256Hash const& _filters)
 {
     Guard l(x_filtersWatches);
     if (_filters.size())
-        LOG(m_loggerWatch) << "noteChanged: " << filtersToString(_filters);
+    	LOGCLTWCH << "noteChanged: " << filtersToString(_filters);
     // accrue all changes left in each filter into the watches.
     for (auto& w: m_watches)
         if (_filters.count(w.second.id))
         {
             if (m_filters.count(w.second.id))
             {
-                LOG(m_loggerWatch) << "!!! " << w.first << " " << w.second.id.abridged();
+            	LOGCLTWCH << "!!! " << w.first << " " << w.second.id.abridged();
                 w.second.changes += m_filters.at(w.second.id).changes;
             }
             else if (m_specialFilters.count(w.second.id))
                 for (h256 const& hash: m_specialFilters.at(w.second.id))
                 {
-                    LOG(m_loggerWatch)
+                	LOGCLTWCH
                         << "!!! " << w.first << " "
                         << (w.second.id == PendingChangedFilter ?
                                    "pending" :
