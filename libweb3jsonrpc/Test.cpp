@@ -33,7 +33,7 @@ using namespace dev::eth;
 using namespace dev::rpc;
 using namespace jsonrpc;
 
-Test::Test(eth::Client& _eth): m_eth(_eth) {}
+Test::Test(eth::Client& _eth) : m_eth(_eth) {}
 
 namespace
 {
@@ -57,7 +57,7 @@ h256 stringToHash(string const& _hashString)
         throw JsonRpcException(Errors::ERROR_RPC_INVALID_PARAMS);
     }
 }
-}
+}  // namespace
 
 string Test::test_getLogHash(string const& _txHash)
 {
@@ -75,7 +75,7 @@ string Test::test_getLogHash(string const& _txHash)
     }
     catch (std::exception const& ex)
     {
-        cwarn << ex.what();
+        LOGWRN << ex.what();
         throw JsonRpcException(Errors::ERROR_RPC_INTERNAL_ERROR, ex.what());
     }
 }
@@ -92,7 +92,7 @@ bool Test::test_setChainParams(Json::Value const& param1)
     }
     catch (std::exception const& ex)
     {
-        cwarn << ex.what();
+        LOGWRN << ex.what();
         throw JsonRpcException(Errors::ERROR_RPC_INTERNAL_ERROR, ex.what());
     }
 }

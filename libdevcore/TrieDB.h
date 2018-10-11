@@ -221,7 +221,7 @@ public:
         }
         catch (...)
         {
-            cwarn << boost::current_exception_diagnostic_information();
+        	LOGWRN << boost::current_exception_diagnostic_information();
             return false;
         }
     }
@@ -554,11 +554,11 @@ template <class DB> void GenericTrieDB<DB>::iterator::next(NibbleSlice _key)
             if (!rlp.isList() || (rlp.itemCount() != 2 && rlp.itemCount() != 17))
             {
 #if ETH_PARANOIA
-                cwarn << "BIG FAT ERROR. STATE TRIE CORRUPTED!!!!!";
-                cwarn << b.rlp.size() << toHex(b.rlp);
-                cwarn << rlp;
+            	LOGWRN << "BIG FAT ERROR. STATE TRIE CORRUPTED!!!!!";
+            	LOGWRN << b.rlp.size() << toHex(b.rlp);
+            	LOGWRN << rlp;
                 auto c = rlp.itemCount();
-                cwarn << c;
+                LOGWRN << c;
                 BOOST_THROW_EXCEPTION(InvalidTrie());
 #else
                 m_that = nullptr;
@@ -689,11 +689,11 @@ template <class DB> void GenericTrieDB<DB>::iterator::next()
             if (!(rlp.isList() && (rlp.itemCount() == 2 || rlp.itemCount() == 17)))
             {
 #if ETH_PARANOIA
-                cwarn << "BIG FAT ERROR. STATE TRIE CORRUPTED!!!!!";
-                cwarn << b.rlp.size() << toHex(b.rlp);
-                cwarn << rlp;
+            	LOGWRN << "BIG FAT ERROR. STATE TRIE CORRUPTED!!!!!";
+            	LOGWRN << b.rlp.size() << toHex(b.rlp);
+            	LOGWRN << rlp;
                 auto c = rlp.itemCount();
-                cwarn << c;
+                LOGWRN << c;
                 BOOST_THROW_EXCEPTION(InvalidTrie());
 #else
                 m_that = nullptr;

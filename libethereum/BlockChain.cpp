@@ -66,7 +66,7 @@ std::ostream& dev::eth::operator<<(std::ostream& _out, BlockChain const& _bc)
             }
             catch (...)
             {
-                cwarn << "Invalid DB entry:" << toHex(key) << " -> "
+            	LOGWRN << "Invalid DB entry:" << toHex(key) << " -> "
                       << toHex(bytesConstRef(_value));
             }
         }
@@ -257,12 +257,12 @@ unsigned BlockChain::open(fs::path const& _path, WithExisting _we)
         {
             if (fs::space(chainPath / fs::path("blocks")).available < 1024)
             {
-                cwarn << "Not enough available space found on hard drive. Please free some up and then re-run. Bailing.";
+            	LOGWRN << "Not enough available space found on hard drive. Please free some up and then re-run. Bailing.";
                 BOOST_THROW_EXCEPTION(NotEnoughAvailableSpace());
             }
             else
             {
-                cwarn <<
+            	LOGWRN <<
                     "Database " <<
                     (chainPath / fs::path("blocks")) <<
                     "or " <<
@@ -273,7 +273,7 @@ unsigned BlockChain::open(fs::path const& _path, WithExisting _we)
         }
         else
         {
-            cwarn << "Unknown database error occurred during in-memory database creation";
+        	LOGWRN << "Unknown database error occurred during in-memory database creation";
             throw;
         }
     }
@@ -342,7 +342,7 @@ void BlockChain::rebuild(fs::path const& _path, std::function<void(unsigned, uns
 {
     if (db::isMemoryDB())
     {
-        cwarn <<"In-memory database detected, skipping rebuild (since there's no existing database to rebuild)";
+    	LOGWRN <<"In-memory database detected, skipping rebuild (since there's no existing database to rebuild)";
         return;
     }
 
@@ -402,7 +402,7 @@ void BlockChain::rebuild(fs::path const& _path, std::function<void(unsigned, uns
 
             if (bi.parentHash() != lastHash)
             {
-                cwarn << "DISJOINT CHAIN DETECTED; " << bi.hash() << "#" << d << " -> parent is" << bi.parentHash() << "; expected" << lastHash << "#" << (d - 1);
+            	LOGWRN << "DISJOINT CHAIN DETECTED; " << bi.hash() << "#" << d << " -> parent is" << bi.parentHash() << "; expected" << lastHash << "#" << (d - 1);
                 return;
             }
             lastHash = bi.hash();
@@ -461,19 +461,19 @@ tuple<ImportRoute, bool, unsigned> BlockChain::sync(BlockQueue& _bq, OverlayDB c
             }
             catch (dev::eth::AlreadyHaveBlock const&)
             {
-                cwarn << "ODD: Import queue contains already imported block";
+            	LOGWRN << "ODD: Import queue contains already imported block";
                 continue;
             }
             catch (dev::eth::UnknownParent const&)
             {
-                cwarn << "ODD: Import queue contains block with unknown parent.";// << LogTag::Error << boost::current_exception_diagnostic_information();
+            	LOGWRN << "ODD: Import queue contains block with unknown parent.";// << LogTag::Error << boost::current_exception_diagnostic_information();
                 // NOTE: don't reimport since the queue should guarantee everything in the right order.
                 // Can't continue - chain bad.
                 badBlocks.push_back(block.verified.info.hash());
             }
             catch (dev::eth::FutureTime const&)
             {
-                cwarn << "ODD: Import queue contains a block with future time.";
+            	LOGWRN << "ODD: Import queue contains a block with future time.";
                 this_thread::sleep_for(chrono::seconds(1));
                 continue;
             }
@@ -622,8 +622,8 @@ void BlockChain::insert(VerifiedBlockRef _block, bytesConstRef _receipts, bool _
     }
     catch (boost::exception const& ex)
     {
-        cwarn << "Error writing to blockchain database: " << boost::diagnostic_information(ex);
-        cwarn << "Fail writing to blockchain database. Bombing out.";
+    	LOGWRN << "Error writing to blockchain database: " << boost::diagnostic_information(ex);
+    	LOGWRN << "Fail writing to blockchain database. Bombing out.";
         exit(-1);
     }
 
@@ -633,8 +633,8 @@ void BlockChain::insert(VerifiedBlockRef _block, bytesConstRef _receipts, bool _
     }
     catch (boost::exception const& ex)
     {
-        cwarn << "Error writing to extras database: " << boost::diagnostic_information(ex);
-        cwarn << "Fail writing to extras database. Bombing out.";
+    	LOGWRN << "Error writing to extras database: " << boost::diagnostic_information(ex);
+    	LOGWRN << "Fail writing to extras database. Bombing out.";
         exit(-1);
     }
 }
@@ -705,9 +705,9 @@ ImportRoute BlockChain::import(VerifiedBlockRef const& _block, OverlayDB const& 
     }
     catch (BadRoot& ex)
     {
-        cwarn << "*** BadRoot error! Trying to import" << _block.info.hash() << "needed root"
+    	LOGWRN << "*** BadRoot error! Trying to import" << _block.info.hash() << "needed root"
               << *boost::get_error_info<errinfo_hash256>(ex);
-        cwarn << _block.info;
+    	LOGWRN << _block.info;
         // Attempt in import later.
         BOOST_THROW_EXCEPTION(TransientError());
     }
@@ -896,8 +896,8 @@ ImportRoute BlockChain::insertBlockAndExtras(VerifiedBlockRef const& _block, byt
     }
     catch (boost::exception& ex)
     {
-        cwarn << "Error writing to blockchain database: " << boost::diagnostic_information(ex);
-        cwarn << "Fail writing to blockchain database. Bombing out.";
+    	LOGWRN << "Error writing to blockchain database: " << boost::diagnostic_information(ex);
+    	LOGWRN << "Fail writing to blockchain database. Bombing out.";
         exit(-1);
     }
 
@@ -907,8 +907,8 @@ ImportRoute BlockChain::insertBlockAndExtras(VerifiedBlockRef const& _block, byt
     }
     catch (boost::exception& ex)
     {
-        cwarn << "Error writing to extras database: " << boost::diagnostic_information(ex);
-        cwarn << "Fail writing to extras database. Bombing out.";
+    	LOGWRN << "Error writing to extras database: " << boost::diagnostic_information(ex);
+    	LOGWRN << "Fail writing to extras database. Bombing out.";
         exit(-1);
     }
 
@@ -946,10 +946,10 @@ ImportRoute BlockChain::insertBlockAndExtras(VerifiedBlockRef const& _block, byt
             }
             catch (boost::exception const& ex)
             {
-                cwarn << "Error writing to extras database: " << boost::diagnostic_information(ex);
+            	LOGWRN << "Error writing to extras database: " << boost::diagnostic_information(ex);
                 cout << "Put" << toHex(bytesConstRef(db::Slice("best"))) << "=>"
                      << toHex(bytesConstRef(db::Slice((char const*)&m_lastBlockHash, 32)));
-                cwarn << "Fail writing to extras database. Bombing out.";
+                LOGWRN << "Fail writing to extras database. Bombing out.";
                 exit(-1);
             }
         }
@@ -1095,10 +1095,10 @@ void BlockChain::rewind(unsigned _newHead)
         }
         catch (boost::exception const& ex)
         {
-            cwarn << "Error writing to extras database: " << boost::diagnostic_information(ex);
+        	LOGWRN << "Error writing to extras database: " << boost::diagnostic_information(ex);
             cout << "Put" << toHex(bytesConstRef(db::Slice("best"))) << "=>"
                  << toHex(bytesConstRef(db::Slice((char const*)&m_lastBlockHash, 32)));
-            cwarn << "Fail writing to extras database. Bombing out.";
+            LOGWRN << "Fail writing to extras database. Bombing out.";
             exit(-1);
         }
         noteCanonChanged();
@@ -1427,7 +1427,7 @@ bytes BlockChain::block(h256 const& _hash) const
     string const d = m_blocksDB->lookup(toSlice(_hash));
     if (d.empty())
     {
-        cwarn << "Couldn't find requested block:" << _hash;
+    	LOGWRN << "Couldn't find requested block:" << _hash;
         return bytes();
     }
 
@@ -1455,7 +1455,7 @@ bytes BlockChain::headerData(h256 const& _hash) const
     string const d = m_blocksDB->lookup(toSlice(_hash));
     if (d.empty())
     {
-        cwarn << "Couldn't find requested block:" << _hash;
+    	LOGWRN << "Couldn't find requested block:" << _hash;
         return bytes();
     }
 
@@ -1479,8 +1479,8 @@ Block BlockChain::genesisBlock(OverlayDB const& _db) const
         ret.mutableState().db().commit();                                           // have to use this db() since it's the one that has been altered with the above commit.
         if (ret.mutableState().rootHash() != r)
         {
-            cwarn << "Hinted genesis block's state root hash is incorrect!";
-            cwarn << "Hinted" << r << ", computed" << ret.mutableState().rootHash();
+        	LOGWRN << "Hinted genesis block's state root hash is incorrect!";
+        	LOGWRN << "Hinted" << r << ", computed" << ret.mutableState().rootHash();
             // TODO: maybe try to fix it by altering the m_params's genesis block?
             exit(-1);
         }

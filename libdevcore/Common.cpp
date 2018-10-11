@@ -33,7 +33,7 @@ void InvariantChecker::checkInvariants(HasInvariants const* _this, char const* _
 {
     if (!_this->invariants())
     {
-        cwarn << (_pre ? "Pre" : "Post") << "invariant failed in" << _fn << "at" << _file << ":" << _line;
+    	LOGWRN << (_pre ? "Pre" : "Post") << "invariant failed in" << _fn << "at" << _file << ":" << _line;
         ::boost::exception_detail::throw_exception_(FailedInvariant(), _fn, _file, _line);
     }
 }

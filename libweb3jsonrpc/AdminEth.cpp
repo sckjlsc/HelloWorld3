@@ -1,22 +1,20 @@
+#include "AdminEth.h"
+#include "JsonHelper.h"
+#include "SessionManager.h"
 #include <jsonrpccpp/common/exception.h>
 #include <libdevcore/CommonJS.h>
+#include <libethashseal/EthashClient.h>
 #include <libethcore/KeyManager.h>
 #include <libethereum/Client.h>
 #include <libethereum/Executive.h>
-#include <libethashseal/EthashClient.h>
-#include "AdminEth.h"
-#include "SessionManager.h"
-#include "JsonHelper.h"
 using namespace std;
 using namespace dev;
 using namespace dev::rpc;
 using namespace dev::eth;
 
-AdminEth::AdminEth(eth::Client& _eth, eth::TrivialGasPricer& _gp, eth::KeyManager& _keyManager, SessionManager& _sm):
-    m_eth(_eth),
-    m_gp(_gp),
-    m_keyManager(_keyManager),
-    m_sm(_sm)
+AdminEth::AdminEth(eth::Client& _eth, eth::TrivialGasPricer& _gp, eth::KeyManager& _keyManager,
+    SessionManager& _sm)
+  : m_eth(_eth), m_gp(_gp), m_keyManager(_keyManager), m_sm(_sm)
 {}
 
 bool AdminEth::admin_eth_setMining(bool _on, string const& _session)
@@ -64,18 +62,18 @@ Json::Value AdminEth::admin_eth_findBlock(string const& _blockHash, string const
     h256 h(_blockHash);
     if (m_eth.blockChain().isKnown(h))
         return toJson(m_eth.blockChain().info(h));
-    switch(m_eth.blockQueue().blockStatus(h))
+    switch (m_eth.blockQueue().blockStatus(h))
     {
-        case QueueStatus::Ready:
-            return "ready";
-        case QueueStatus::Importing:
-            return "importing";
-        case QueueStatus::UnknownParent:
-            return "unknown parent";
-        case QueueStatus::Bad:
-            return "bad";
-        default:
-            return "unknown";
+    case QueueStatus::Ready:
+        return "ready";
+    case QueueStatus::Importing:
+        return "importing";
+    case QueueStatus::UnknownParent:
+        return "unknown parent";
+    case QueueStatus::Bad:
+        return "bad";
+    default:
+        return "unknown";
     }
 }
 
@@ -99,7 +97,7 @@ Json::Value AdminEth::admin_eth_allAccounts(string const& _session)
     u256 total = 0;
     u256 pendingtotal = 0;
     Address beneficiary;
-    for (auto const& address: m_keyManager.accounts())
+    for (auto const& address : m_keyManager.accounts())
     {
         auto pending = m_eth.balanceAt(address, PendingBlock);
         auto latest = m_eth.balanceAt(address, LatestBlock);
@@ -155,7 +153,7 @@ Json::Value AdminEth::admin_eth_inspect(string const& _address, string const& _s
     RPC_ADMIN;
     if (!isHash<Address>(_address))
         throw jsonrpc::JsonRpcException("Invalid address given.");
-    
+
     Json::Value ret;
     auto h = Address(fromHex(_address));
     ret["storage"] = toJson(m_eth.storageAt(h, PendingBlock));
@@ -191,12 +189,13 @@ Json::Value AdminEth::admin_eth_reprocess(string const& _blockNumberOrHash, stri
     return ret;
 }
 
-Json::Value AdminEth::admin_eth_vmTrace(string const& _blockNumberOrHash, int _txIndex, string const& _session)
+Json::Value AdminEth::admin_eth_vmTrace(
+    string const& _blockNumberOrHash, int _txIndex, string const& _session)
 {
     RPC_ADMIN;
-    
+
     Json::Value ret;
-    
+
     if (_txIndex < 0)
         throw jsonrpc::JsonRpcException("Negative index");
     Block block = m_eth.block(blockHash(_blockNumberOrHash));
@@ -215,16 +214,17 @@ Json::Value AdminEth::admin_eth_vmTrace(string const& _blockNumberOrHash, int _t
             e.finalize();
             ret["structLogs"] = st.jsonValue();
         }
-        catch(Exception const& _e)
+        catch (Exception const& _e)
         {
-            cwarn << diagnostic_information(_e);
+            LOGWRN << diagnostic_information(_e);
         }
     }
-    
+
     return ret;
 }
 
-Json::Value AdminEth::admin_eth_getReceiptByHashAndIndex(string const& _blockNumberOrHash, int _txIndex, string const& _session)
+Json::Value AdminEth::admin_eth_getReceiptByHashAndIndex(
+    string const& _blockNumberOrHash, int _txIndex, string const& _session)
 {
     RPC_ADMIN;
     if (_txIndex < 0)
@@ -289,7 +289,8 @@ string AdminEth::miner_hashrate()
     }
     catch (...)
     {
-        throw jsonrpc::JsonRpcException("Hashrate not available - blockchain does not support mining.");
+        throw jsonrpc::JsonRpcException(
+            "Hashrate not available - blockchain does not support mining.");
     }
     return toJS(client->hashrate());
 }

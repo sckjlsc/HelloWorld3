@@ -1,19 +1,17 @@
+#include "Debug.h"
+#include "JsonHelper.h"
 #include <jsonrpccpp/common/exception.h>
 #include <libdevcore/CommonIO.h>
 #include <libdevcore/CommonJS.h>
 #include <libethcore/CommonJS.h>
 #include <libethereum/Client.h>
 #include <libethereum/Executive.h>
-#include "Debug.h"
-#include "JsonHelper.h"
 using namespace std;
 using namespace dev;
 using namespace dev::rpc;
 using namespace dev::eth;
 
-Debug::Debug(eth::Client const& _eth):
-    m_eth(_eth)
-{}
+Debug::Debug(eth::Client const& _eth) : m_eth(_eth) {}
 
 StandardTrace::DebugOptions dev::eth::debugOptions(Json::Value const& _json)
 {
@@ -25,7 +23,7 @@ StandardTrace::DebugOptions dev::eth::debugOptions(Json::Value const& _json)
     if (!_json["disableMemory"].empty())
         op.disableMemory = _json["disableMemory"].asBool();
     if (!_json["disableStack"].empty())
-        op.disableStack =_json["disableStack"].asBool();
+        op.disableStack = _json["disableStack"].asBool();
     if (!_json["fullStorage"].empty())
         op.fullStorage = _json["fullStorage"].asBool();
     return op;
@@ -60,7 +58,8 @@ State Debug::stateAt(std::string const& _blockHashOrNumber, int _txIndex) const
         // the final state of block (after applying rewards)
         state = block.state();
     else
-        throw jsonrpc::JsonRpcException("Transaction index " + toString(_txIndex) + " out of range for block " + _blockHashOrNumber);
+        throw jsonrpc::JsonRpcException("Transaction index " + toString(_txIndex) +
+                                        " out of range for block " + _blockHashOrNumber);
 
     return state;
 }
@@ -114,9 +113,9 @@ Json::Value Debug::debug_traceTransaction(string const& _txHash, Json::Value con
         ret["return"] = toHexPrefixed(er.output);
         ret["structLogs"] = trace;
     }
-    catch(Exception const& _e)
+    catch (Exception const& _e)
     {
-        cwarn << diagnostic_information(_e);
+        LOGWRN << diagnostic_information(_e);
     }
     return ret;
 }
@@ -167,14 +166,15 @@ Json::Value Debug::debug_accountRangeAt(
     }
     catch (Exception const& _e)
     {
-        cwarn << diagnostic_information(_e);
+        LOGWRN << diagnostic_information(_e);
         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_RPC_INVALID_PARAMS);
     }
 
     return ret;
 }
 
-Json::Value Debug::debug_storageRangeAt(string const& _blockHashOrNumber, int _txIndex, string const& _address, string const& _begin, int _maxResults)
+Json::Value Debug::debug_storageRangeAt(string const& _blockHashOrNumber, int _txIndex,
+    string const& _address, string const& _begin, int _maxResults)
 {
     Json::Value ret(Json::objectValue);
     ret["complete"] = true;
@@ -209,7 +209,7 @@ Json::Value Debug::debug_storageRangeAt(string const& _blockHashOrNumber, int _t
     }
     catch (Exception const& _e)
     {
-        cwarn << diagnostic_information(_e);
+        LOGWRN << diagnostic_information(_e);
         throw jsonrpc::JsonRpcException(jsonrpc::Errors::ERROR_RPC_INVALID_PARAMS);
     }
 
@@ -224,14 +224,16 @@ std::string Debug::debug_preimage(std::string const& _hashedKey)
     return key.empty() ? std::string() : toHexPrefixed(key);
 }
 
-Json::Value Debug::debug_traceCall(Json::Value const& _call, std::string const& _blockNumber, Json::Value const& _options)
+Json::Value Debug::debug_traceCall(
+    Json::Value const& _call, std::string const& _blockNumber, Json::Value const& _options)
 {
     Json::Value ret;
     try
     {
         Block temp = m_eth.blockByNumber(jsToBlockNumber(_blockNumber));
         TransactionSkeleton ts = toTransactionSkeleton(_call);
-        if (!ts.from) {
+        if (!ts.from)
+        {
             ts.from = Address();
         }
         u256 nonce = temp.transactionsFrom(ts.from);
@@ -248,9 +250,9 @@ Json::Value Debug::debug_traceCall(Json::Value const& _call, std::string const& 
         ret["return"] = toHexPrefixed(er.output);
         ret["structLogs"] = trace;
     }
-    catch(Exception const& _e)
+    catch (Exception const& _e)
     {
-        cwarn << diagnostic_information(_e);
+        LOGWRN << diagnostic_information(_e);
     }
     return ret;
 }

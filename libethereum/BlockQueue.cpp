@@ -116,7 +116,7 @@ void BlockQueue::verifierBody()
             m_readySet.erase(work.hash);
             m_knownBad.insert(work.hash);
             if (!m_verifying.remove(work.hash))
-                cwarn << "Unexpected exception when verifying block: " << _ex.what();
+            	LOGWRN << "Unexpected exception when verifying block: " << _ex.what();
             drainVerified_WITH_BOTH_LOCKS();
             continue;
         }
@@ -143,7 +143,7 @@ void BlockQueue::verifierBody()
             else
             {
                 if (!m_verifying.replace(work.hash, move(res)))
-                    cwarn << "BlockQueue missing our job: was there a GM?";
+                	LOGWRN << "BlockQueue missing our job: was there a GM?";
             }
         }
         if (ready)
@@ -192,7 +192,7 @@ ImportResult BlockQueue::import(bytesConstRef _block, bool _isOurs)
     }
     catch (Exception const& _e)
     {
-        cwarn << "Ignoring malformed block: " << diagnostic_information(_e);
+    	LOGWRN << "Ignoring malformed block: " << diagnostic_information(_e);
         return ImportResult::Malformed;
     }
 

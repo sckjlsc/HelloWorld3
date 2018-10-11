@@ -58,7 +58,7 @@ public:
         catch (FailedInvariant const&)
         {
             // "fix" for https://github.com/ethereum/webthree-umbrella/issues/300
-            cwarn << "Failed invariant during sync, restarting sync";
+        	LOGWRN << "Failed invariant during sync, restarting sync";
             m_sync->restartSync();
         }
     }
@@ -78,7 +78,7 @@ public:
         }
         catch (Exception&)
         {
-            cwarn << "Exception on peer destruciton: " << boost::current_exception_diagnostic_information();
+        	LOGWRN << "Exception on peer destruciton: " << boost::current_exception_diagnostic_information();
         }
     }
 
@@ -91,7 +91,7 @@ public:
         catch (FailedInvariant const&)
         {
             // "fix" for https://github.com/ethereum/webthree-umbrella/issues/300
-            cwarn << "Failed invariant during sync, restarting sync";
+        	LOGWRN << "Failed invariant during sync, restarting sync";
             m_sync->restartSync();
         }
     }
@@ -105,7 +105,7 @@ public:
         catch (FailedInvariant const&)
         {
             // "fix" for https://github.com/ethereum/webthree-umbrella/issues/300
-            cwarn << "Failed invariant during sync, restarting sync";
+        	LOGWRN << "Failed invariant during sync, restarting sync";
             m_sync->restartSync();
         }
     }
@@ -119,7 +119,7 @@ public:
         catch (FailedInvariant const&)
         {
             // "fix" for https://github.com/ethereum/webthree-umbrella/issues/300
-            cwarn << "Failed invariant during sync, restarting sync";
+        	LOGWRN << "Failed invariant during sync, restarting sync";
             m_sync->restartSync();
         }
     }
@@ -133,7 +133,7 @@ public:
         catch (FailedInvariant const&)
         {
             // "fix" for https://github.com/ethereum/webthree-umbrella/issues/300
-            cwarn << "Failed invariant during sync, restarting sync";
+        	LOGWRN << "Failed invariant during sync, restarting sync";
             m_sync->restartSync();
         }
     }

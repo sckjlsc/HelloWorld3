@@ -21,23 +21,21 @@
 
 #include "TransactionQueue.h"
 
+#include "Transaction.h"
 #include <libdevcore/Log.h>
 #include <libethcore/Exceptions.h>
-#include "Transaction.h"
 using namespace std;
 using namespace dev;
 using namespace dev::eth;
 
 const size_t c_maxVerificationQueueSize = 8192;
 
-TransactionQueue::TransactionQueue(unsigned _limit, unsigned _futureLimit):
-    m_current(PriorityCompare { *this }),
-    m_limit(_limit),
-    m_futureLimit(_futureLimit)
+TransactionQueue::TransactionQueue(unsigned _limit, unsigned _futureLimit)
+  : m_current(PriorityCompare{*this}), m_limit(_limit), m_futureLimit(_futureLimit)
 {
     unsigned verifierThreads = std::max(thread::hardware_concurrency(), 3U) - 2U;
     for (unsigned i = 0; i < verifierThreads; ++i)
-        m_verifiers.emplace_back([=](){
+        m_verifiers.emplace_back([=]() {
             setThreadName("txcheck" + toString(i));
             this->verifierBody();
         });
@@ -46,9 +44,9 @@ TransactionQueue::TransactionQueue(unsigned _limit, unsigned _futureLimit):
 TransactionQueue::~TransactionQueue()
 {
     DEV_GUARDED(x_queue)
-        m_aborting = true;
+    m_aborting = true;
     m_queueReady.notify_all();
-    for (auto& i: m_verifiers)
+    for (auto& i : m_verifiers)
         i.join();
 }
 
@@ -115,7 +113,8 @@ h256Hash TransactionQueue::knownTransactions() const
     return m_known;
 }
 
-ImportResult TransactionQueue::manageImport_WITH_LOCK(h256 const& _h, Transaction const& _transaction)
+ImportResult TransactionQueue::manageImport_WITH_LOCK(
+    h256 const& _h, Transaction const& _transaction)
 {
     try
     {
@@ -203,13 +202,14 @@ void TransactionQueue::insertCurrent_WITH_LOCK(std::pair<h256, Transaction> cons
 {
     if (m_currentByHash.count(_p.first))
     {
-        cwarn << "Transaction hash" << _p.first << "already in current?!";
+        LOGWRN << "Transaction hash" << _p.first << "already in current?!";
         return;
     }
 
     Transaction const& t = _p.second;
     // Insert into current
-    auto inserted = m_currentByAddressAndNonce[t.from()].insert(std::make_pair(t.nonce(), PriorityQueue::iterator()));
+    auto inserted = m_currentByAddressAndNonce[t.from()].insert(
+        std::make_pair(t.nonce(), PriorityQueue::iterator()));
     PriorityQueue::iterator handle = m_current.emplace(VerifiedTransaction(t));
     inserted.first->second = handle;
     m_currentByHash[_p.first] = handle;
@@ -227,7 +227,7 @@ bool TransactionQueue::remove_WITH_LOCK(h256 const& _txHash)
 
     Address from = (*t->second).transaction.from();
     auto it = m_currentByAddressAndNonce.find(from);
-    assert (it != m_currentByAddressAndNonce.end());
+    assert(it != m_currentByAddressAndNonce.end());
     it->second.erase((*t->second).transaction.nonce());
     m_current.erase(t->second);
     m_currentByHash.erase(t);
@@ -265,7 +265,9 @@ void TransactionQueue::setFuture(h256 const& _txHash)
     auto cutoff = queue.lower_bound(st.transaction.nonce());
     for (auto m = cutoff; m != queue.end(); ++m)
     {
-        VerifiedTransaction& t = const_cast<VerifiedTransaction&>(*(m->second)); // set has only const iterators. Since we are moving out of container that's fine
+        VerifiedTransaction& t = const_cast<VerifiedTransaction&>(
+            *(m->second));  // set has only const iterators. Since we are moving out of container
+                            // that's fine
         m_currentByHash.erase(t.transaction.sha3());
         target.emplace(t.transaction.nonce(), move(t));
         m_current.erase(m->second);
@@ -289,7 +291,8 @@ void TransactionQueue::makeCurrent_WITH_LOCK(Transaction const& _t)
             auto ft = fb;
             while (ft != fs->second.end() && ft->second.transaction.nonce() == nonce)
             {
-                auto inserted = m_currentByAddressAndNonce[_t.from()].insert(std::make_pair(ft->second.transaction.nonce(), PriorityQueue::iterator()));
+                auto inserted = m_currentByAddressAndNonce[_t.from()].insert(
+                    std::make_pair(ft->second.transaction.nonce(), PriorityQueue::iterator()));
                 PriorityQueue::iterator handle = m_current.emplace(move(ft->second));
                 inserted.first->second = handle;
                 m_currentByHash[(*handle).transaction.sha3()] = handle;
@@ -383,7 +386,7 @@ void TransactionQueue::verifierBody()
 
         {
             unique_lock<Mutex> l(x_queue);
-            m_queueReady.wait(l, [&](){ return !m_unverified.empty() || m_aborting; });
+            m_queueReady.wait(l, [&]() { return !m_unverified.empty() || m_aborting; });
             if (m_aborting)
                 return;
             work = move(m_unverified.front());
@@ -392,14 +395,15 @@ void TransactionQueue::verifierBody()
 
         try
         {
-            Transaction t(work.transaction, CheckTransaction::Cheap); //Signature will be checked later
+            Transaction t(work.transaction, CheckTransaction::Cheap);  // Signature will be checked
+                                                                       // later
             ImportResult ir = import(t);
             m_onImport(ir, t.sha3(), work.nodeId);
         }
         catch (...)
         {
             // should not happen as exceptions are handled in import.
-            cwarn << "Bad transaction:" << boost::current_exception_diagnostic_information();
+            LOGWRN << "Bad transaction:" << boost::current_exception_diagnostic_information();
         }
     }
 }

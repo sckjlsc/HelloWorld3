@@ -15,17 +15,17 @@
     along with cpp-ethereum.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <fstream>
-#include <boost/test/unit_test.hpp>
+#include "MemTrie.h"
 #include <json_spirit/JsonSpiritHeaders.h>
 #include <libdevcore/CommonIO.h>
+#include <libdevcore/StateCacheDB.h>
 #include <libdevcore/TrieDB.h>
 #include <libdevcore/TrieHash.h>
-#include <libdevcore/StateCacheDB.h>
-#include "MemTrie.h"
-#include <test/tools/libtesteth/TestOutputHelper.h>
 #include <test/tools/libtesteth/Options.h>
+#include <test/tools/libtesteth/TestOutputHelper.h>
 #include <boost/filesystem/path.hpp>
+#include <boost/test/unit_test.hpp>
+#include <fstream>
 
 using namespace std;
 using namespace dev;
@@ -39,7 +39,7 @@ static unsigned fac(unsigned _i)
     return _i > 2 ? _i * fac(_i - 1) : _i;
 }
 
-using dev::operator <<;
+using dev::operator<<;
 
 BOOST_AUTO_TEST_SUITE(Crypto)
 
@@ -52,15 +52,16 @@ BOOST_AUTO_TEST_CASE(fat_trie)
     {
         FatGenericTrieDB<StateCacheDB> ft(&fm);
         ft.init();
-        ft.insert(h256("69", h256::FromHex, h256::AlignRight).ref(), h256("414243", h256::FromHex, h256::AlignRight).ref());
-        for (auto i: ft)
+        ft.insert(h256("69", h256::FromHex, h256::AlignRight).ref(),
+            h256("414243", h256::FromHex, h256::AlignRight).ref());
+        for (auto i : ft)
             cnote << i.first << i.second;
         r = ft.root();
     }
     {
         FatGenericTrieDB<StateCacheDB> ft(&fm);
         ft.setRoot(r);
-        for (auto i: ft)
+        for (auto i : ft)
             cnote << i.first << i.second;
     }
 }
@@ -72,14 +73,16 @@ BOOST_AUTO_TEST_CASE(hex_encoded_securetrie_test)
     cnote << "Testing Secure Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("hex_encoded_securetrie_test.json"));
-    BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of 'hex_encoded_securetrie_test.json' is empty. Have you cloned the 'tests' repo branch develop?");
+    BOOST_REQUIRE_MESSAGE(s.length() > 0,
+        "Contents of 'hex_encoded_securetrie_test.json' is empty. Have you cloned the 'tests' repo "
+        "branch develop?");
     js::read_string(s, v);
-    for (auto& i: v.get_obj())
+    for (auto& i : v.get_obj())
     {
         cnote << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
-        for (auto i: o["in"].get_obj())
+        for (auto i : o["in"].get_obj())
         {
             ss.push_back(make_pair(i.first, i.second.get_str()));
             if (!ss.back().first.find("0x"))
@@ -105,7 +108,7 @@ BOOST_AUTO_TEST_CASE(hex_encoded_securetrie_test)
             BOOST_REQUIRE(t.check(true));
             BOOST_REQUIRE(ht.check(true));
             BOOST_REQUIRE(ft.check(true));
-            for (auto const& k: ss)
+            for (auto const& k : ss)
             {
                 t.insert(k.first, k.second);
                 ht.insert(k.first, k.second);
@@ -137,14 +140,16 @@ BOOST_AUTO_TEST_CASE(trie_test_anyorder)
     cnote << "Testing Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("trieanyorder.json"));
-    BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of 'trieanyorder.json' is empty. Have you cloned the 'tests' repo branch develop?");
+    BOOST_REQUIRE_MESSAGE(s.length() > 0,
+        "Contents of 'trieanyorder.json' is empty. Have you cloned the 'tests' repo branch "
+        "develop?");
     js::read_string(s, v);
-    for (auto& i: v.get_obj())
+    for (auto& i : v.get_obj())
     {
         cnote << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
-        for (auto i: o["in"].get_obj())
+        for (auto i : o["in"].get_obj())
         {
             ss.push_back(make_pair(i.first, i.second.get_str()));
             if (!ss.back().first.find("0x"))
@@ -170,7 +175,7 @@ BOOST_AUTO_TEST_CASE(trie_test_anyorder)
             BOOST_REQUIRE(t.check(true));
             BOOST_REQUIRE(ht.check(true));
             BOOST_REQUIRE(ft.check(true));
-            for (auto const& k: ss)
+            for (auto const& k : ss)
             {
                 t.insert(k.first, k.second);
                 ht.insert(k.first, k.second);
@@ -202,19 +207,20 @@ BOOST_AUTO_TEST_CASE(trie_tests_ordered)
     cnote << "Testing Trie...";
     js::mValue v;
     string const s = contentsString(testPath / fs::path("trietest.json"));
-    BOOST_REQUIRE_MESSAGE(s.length() > 0, "Contents of 'trietest.json' is empty. Have you cloned the 'tests' repo branch develop?");
+    BOOST_REQUIRE_MESSAGE(s.length() > 0,
+        "Contents of 'trietest.json' is empty. Have you cloned the 'tests' repo branch develop?");
     js::read_string(s, v);
 
-    for (auto& i: v.get_obj())
+    for (auto& i : v.get_obj())
     {
         cnote << i.first;
         js::mObject& o = i.second.get_obj();
         vector<pair<string, string>> ss;
         vector<string> keysToBeDeleted;
-        for (auto& i: o["in"].get_array())
+        for (auto& i : o["in"].get_array())
         {
             vector<string> values;
-            for (auto& s: i.get_array())
+            for (auto& s : i.get_array())
             {
                 if (s.type() == json_spirit::str_type)
                     values.push_back(s.get_str());
@@ -254,12 +260,15 @@ BOOST_AUTO_TEST_CASE(trie_tests_ordered)
         BOOST_REQUIRE(ht.check(true));
         BOOST_REQUIRE(ft.check(true));
 
-        for (auto const& k: ss)
+        for (auto const& k : ss)
         {
-            if (find(keysToBeDeleted.begin(), keysToBeDeleted.end(), k.first) != keysToBeDeleted.end() && k.second.empty())
+            if (find(keysToBeDeleted.begin(), keysToBeDeleted.end(), k.first) !=
+                    keysToBeDeleted.end() &&
+                k.second.empty())
                 t.remove(k.first), ht.remove(k.first), ft.remove(k.first);
             else
-                t.insert(k.first, k.second), ht.insert(k.first, k.second), ft.insert(k.first, k.second);
+                t.insert(k.first, k.second), ht.insert(k.first, k.second),
+                    ft.insert(k.first, k.second);
             BOOST_REQUIRE(t.check(true));
             BOOST_REQUIRE(ht.check(true));
             BOOST_REQUIRE(ft.check(true));
@@ -282,16 +291,18 @@ BOOST_AUTO_TEST_CASE(trie_tests_ordered)
 h256 stringMapHash256(StringMap const& _s)
 {
     BytesMap bytesMap;
-    for (auto const& _v: _s)
-        bytesMap.insert(std::make_pair(bytes(_v.first.begin(), _v.first.end()), bytes(_v.second.begin(), _v.second.end())));
+    for (auto const& _v : _s)
+        bytesMap.insert(std::make_pair(
+            bytes(_v.first.begin(), _v.first.end()), bytes(_v.second.begin(), _v.second.end())));
     return hash256(bytesMap);
 }
 
 bytes stringMapRlp256(StringMap const& _s)
 {
     BytesMap bytesMap;
-    for (auto const& _v: _s)
-        bytesMap.insert(std::make_pair(bytes(_v.first.begin(), _v.first.end()), bytes(_v.second.begin(), _v.second.end())));
+    for (auto const& _v : _s)
+        bytesMap.insert(std::make_pair(
+            bytes(_v.first.begin(), _v.first.end()), bytes(_v.second.begin(), _v.second.end())));
     return rlp256(bytesMap);
 }
 
@@ -302,7 +313,7 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
     {
         StateCacheDB m;
         GenericTrieDB<StateCacheDB> t(&m);
-        t.init();	// initialise as empty tree.
+        t.init();  // initialise as empty tree.
         cnote << t;
         cnote << m;
         cnote << t.root();
@@ -336,7 +347,7 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
     {
         StateCacheDB m;
         GenericTrieDB<StateCacheDB> t(&m);
-        t.init();	// initialise as empty tree.
+        t.init();  // initialise as empty tree.
         t.insert(string("a"), string("A"));
         t.insert(string("b"), string("B"));
         cnote << t;
@@ -375,12 +386,11 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
         StateCacheDB m;
         EnforceRefs r(m, true);
         GenericTrieDB<StateCacheDB> d(&m);
-        d.init();	// initialise as empty tree.
+        d.init();  // initialise as empty tree.
         MemTrie t;
         StringMap s;
 
-        auto add = [&](char const* a, char const* b)
-        {
+        auto add = [&](char const* a, char const* b) {
             d.insert(string(a), string(b));
             t.insert(a, b);
             s[a] = b;
@@ -395,7 +405,7 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
             BOOST_REQUIRE(d.check(true));
             BOOST_REQUIRE_EQUAL(t.hash256(), stringMapHash256(s));
             BOOST_REQUIRE_EQUAL(d.root(), stringMapHash256(s));
-            for (auto const& i: s)
+            for (auto const& i : s)
             {
                 (void)i;
                 BOOST_REQUIRE_EQUAL(t.at(i.first), i.second);
@@ -403,8 +413,7 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
             }
         };
 
-        auto remove = [&](char const* a)
-        {
+        auto remove = [&](char const* a) {
             s.erase(a);
             t.remove(a);
             d.remove(string(a));
@@ -421,7 +430,7 @@ BOOST_AUTO_TEST_CASE(moreTrieTests)
             BOOST_REQUIRE(d.at(string(a)).empty());
             BOOST_REQUIRE_EQUAL(t.hash256(), stringMapHash256(s));
             BOOST_REQUIRE_EQUAL(d.root(), stringMapHash256(s));
-            for (auto const& i: s)
+            for (auto const& i : s)
             {
                 (void)i;
                 BOOST_REQUIRE_EQUAL(t.at(i.first), i.second);
@@ -455,7 +464,7 @@ std::string randomWord()
         c = n[d(s_eng)];
     return ret;
 }
-}
+}  // namespace
 
 BOOST_AUTO_TEST_CASE(trieLowerBound)
 {
@@ -465,7 +474,7 @@ BOOST_AUTO_TEST_CASE(trieLowerBound)
         StateCacheDB dm;
         EnforceRefs e(dm, true);
         GenericTrieDB<StateCacheDB> d(&dm);
-        d.init();	// initialise as empty tree.
+        d.init();  // initialise as empty tree.
         for (int a = 0; a < 20; ++a)
         {
             StringMap m;
@@ -477,7 +486,7 @@ BOOST_AUTO_TEST_CASE(trieLowerBound)
                 d.insert(k, v);
             }
 
-            for (auto i: d)
+            for (auto i : d)
             {
                 auto it = d.lower_bound(i.first);
                 for (auto iit = d.begin(); iit != d.end(); ++iit)
@@ -498,7 +507,6 @@ BOOST_AUTO_TEST_CASE(trieLowerBound)
                         break;
                     }
             }
-
         }
     }
 }
@@ -529,7 +537,8 @@ BOOST_AUTO_TEST_CASE(hashedLowerBound)
     ++itHashToKey;
 
     // check trie iteration against map iteration
-    for (auto itTrie = trie.hashedLowerBound(itHashToKey->first); itTrie != trie.hashedEnd(); ++itTrie, ++itHashToKey)
+    for (auto itTrie = trie.hashedLowerBound(itHashToKey->first); itTrie != trie.hashedEnd();
+         ++itTrie, ++itHashToKey)
     {
         // check hashed key
         BOOST_CHECK((*itTrie).first.toBytes() == itHashToKey->first.asBytes());
@@ -548,7 +557,7 @@ BOOST_AUTO_TEST_CASE(trieStess)
         StateCacheDB dm;
         EnforceRefs e(dm, true);
         GenericTrieDB<StateCacheDB> d(&dm);
-        d.init();	// initialise as empty tree.
+        d.init();  // initialise as empty tree.
         MemTrie t;
         BOOST_REQUIRE(d.check(true));
         for (int a = 0; a < 20; ++a)
@@ -574,34 +583,35 @@ BOOST_AUTO_TEST_CASE(trieStess)
                 m.erase(k);
                 if (!d.check(true))
                 {
-                    // cwarn << m;
-                    for (auto i: d)
-                        cwarn << i.first.toString() << i.second.toString();
+                    // LOGWRN << m;
+                    for (auto i : d)
+                        LOGWRN << i.first.toString() << i.second.toString();
 
                     StateCacheDB dm2;
                     EnforceRefs e2(dm2, true);
                     GenericTrieDB<StateCacheDB> d2(&dm2);
-                    d2.init();	// initialise as empty tree.
-                    for (auto i: d)
+                    d2.init();  // initialise as empty tree.
+                    for (auto i : d)
                         d2.insert(i.first, i.second);
 
-                    cwarn << "Good:" << d2.root();
-//					for (auto i: dm2.get())
-//						cwarn << i.first << ": " << RLP(i.second);
+                    LOGWRN << "Good:" << d2.root();
+                    //					for (auto i: dm2.get())
+                    //						LOGWRN << i.first << ": " << RLP(i.second);
                     d2.debugStructure(cerr);
-                    cwarn << "Broken:" << d.root();	// Leaves an extension -> extension (3c1... -> 742...)
-//					for (auto i: dm.get())
-//						cwarn << i.first << ": " << RLP(i.second);
+                    LOGWRN << "Broken:"
+                           << d.root();  // Leaves an extension -> extension (3c1... -> 742...)
+                                         //					for (auto i: dm.get())
+                                         //						LOGWRN << i.first << ": " << RLP(i.second);
                     d.debugStructure(cerr);
 
                     d2.insert(k, v);
-                    cwarn << "Pres:" << d2.root();
-//					for (auto i: dm2.get())
-//						cwarn << i.first << ": " << RLP(i.second);
+                    LOGWRN << "Pres:" << d2.root();
+                    //					for (auto i: dm2.get())
+                    //						LOGWRN << i.first << ": " << RLP(i.second);
                     d2.debugStructure(cerr);
                     d2.remove(k);
 
-                    cwarn << "Good?" << d2.root();
+                    LOGWRN << "Good?" << d2.root();
                 }
                 BOOST_REQUIRE(d.check(true));
                 BOOST_REQUIRE_EQUAL(stringMapHash256(m), t.hash256());
@@ -611,9 +621,10 @@ BOOST_AUTO_TEST_CASE(trieStess)
     }
 }
 
-template<typename Trie> void perfTestTrie(char const* _name)
+template <typename Trie>
+void perfTestTrie(char const* _name)
 {
-    for (size_t p = 1000; p != 1000000; p*=10)
+    for (size_t p = 1000; p != 1000000; p *= 10)
     {
         StateCacheDB dm;
         Trie d(&dm);
@@ -633,7 +644,7 @@ template<typename Trie> void perfTestTrie(char const* _name)
         }
         cnote << "Insert " << p << "values: " << t.elapsed();
         t.restart();
-        for (auto k: keys)
+        for (auto k : keys)
             d.at(k);
         cnote << "Query 1000 values: " << t.elapsed();
         t.restart();
@@ -642,7 +653,7 @@ template<typename Trie> void perfTestTrie(char const* _name)
             *it;
         cnote << "Iterate 1000 values: " << t.elapsed();
         t.restart();
-        for (auto k: keys)
+        for (auto k : keys)
             d.remove(k);
         cnote << "Remove 1000 values:" << t.elapsed() << "\n";
     }
@@ -653,7 +664,8 @@ BOOST_AUTO_TEST_CASE(triePerf)
     if (test::Options::get().all)
     {
         perfTestTrie<SpecificTrieDB<GenericTrieDB<StateCacheDB>, h256>>("GenericTrieDB");
-        perfTestTrie<SpecificTrieDB<HashedGenericTrieDB<StateCacheDB>, h256>>("HashedGenericTrieDB");
+        perfTestTrie<SpecificTrieDB<HashedGenericTrieDB<StateCacheDB>, h256>>(
+            "HashedGenericTrieDB");
         perfTestTrie<SpecificTrieDB<FatGenericTrieDB<StateCacheDB>, h256>>("FatGenericTrieDB");
     }
     else

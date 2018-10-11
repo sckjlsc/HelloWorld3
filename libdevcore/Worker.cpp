@@ -64,7 +64,7 @@ void Worker::startWorking()
 				}
 				catch (std::exception const& _e)
 				{
-					cwarn << "Exception thrown in Worker thread: " << _e.what();
+					LOGWRN << "Exception thrown in Worker thread: " << _e.what();
 				}
 
 //				ex = WorkerState::Stopping;

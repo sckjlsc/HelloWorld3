@@ -77,27 +77,27 @@ enum Verbosity
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_errorLogger,
     boost::log::sources::severity_channel_logger_mt<>,
     (boost::log::keywords::severity = VerbosityError)(boost::log::keywords::channel = "error"))
-#define cerror LOG(dev::g_errorLogger::get())
+#define ccerror LOG(dev::g_errorLogger::get())
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_warnLogger,
     boost::log::sources::severity_channel_logger_mt<>,
     (boost::log::keywords::severity = VerbosityWarning)(boost::log::keywords::channel = "warn"))
-#define cwarn LOG(dev::g_warnLogger::get())
+#define ccwarn LOG(dev::g_warnLogger::get())
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_noteLogger,
     boost::log::sources::severity_channel_logger_mt<>,
     (boost::log::keywords::severity = VerbosityInfo)(boost::log::keywords::channel = "info"))
-#define cnote LOG(dev::g_noteLogger::get())
+#define ccnote LOG(dev::g_noteLogger::get())
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_debugLogger,
     boost::log::sources::severity_channel_logger_mt<>,
     (boost::log::keywords::severity = VerbosityDebug)(boost::log::keywords::channel = "debug"))
-#define cdebug LOG(dev::g_debugLogger::get())
+#define ccdebug LOG(dev::g_debugLogger::get())
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(g_traceLogger,
     boost::log::sources::severity_channel_logger_mt<>,
     (boost::log::keywords::severity = VerbosityTrace)(boost::log::keywords::channel = "trace"))
-#define ctrace LOG(dev::g_traceLogger::get())
+#define cctrace LOG(dev::g_traceLogger::get())
 
 // Simple macro to log to any channel a message without creating a logger object
 // e.g. clog(VerbosityInfo, "channel") << "message";
@@ -114,15 +114,15 @@ inline std::string location(const std::string& path) {
 }
 
 #define LOGTRC \
-		ctrace << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		cctrace << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGDBG \
-		cdebug << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccdebug << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGINF \
-		cnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGWRN \
-		cwarn << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccwarn << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGERR \
-		cerror << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccerror << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 
 struct LoggingOptions
 {

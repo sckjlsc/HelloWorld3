@@ -226,7 +226,7 @@ void SecretStore::load(fs::path const& _keysPath)
 
 h128 SecretStore::readKey(fs::path const& _file, bool _takeFileOwnership)
 {
-	ctrace << "Reading" << _file.string();
+	LOGTRC << "Reading" << _file.string();
 	return readKeyContent(contentsString(_file), _takeFileOwnership ? _file : string());
 }
 
@@ -243,12 +243,12 @@ h128 SecretStore::readKeyContent(string const& _content, fs::path const& _file)
 			if (o.find("address") != o.end() && isHex(o["address"].get_str()))
 				address = Address(o["address"].get_str());
 			else
-				cwarn << "Account address is either not defined or not in hex format" << _file.string();
+				LOGWRN << "Account address is either not defined or not in hex format" << _file.string();
 			m_keys[uuid] = EncryptedKey{js::write_string(o["crypto"], false), _file, address};
 			return uuid;
 		}
 		else
-			cwarn << "Invalid JSON in key file" << _file.string();
+			LOGWRN << "Invalid JSON in key file" << _file.string();
 		return h128();
 	}
 	catch (...)
@@ -383,7 +383,7 @@ bytesSec SecretStore::decrypt(string const& _v, string const& _pass)
 		auto params = o["kdfparams"].get_obj();
 		if (params["prf"].get_str() != "hmac-sha256")
 		{
-			cwarn << "Unknown PRF for PBKDF2" << params["prf"].get_str() << "not supported.";
+			LOGWRN << "Unknown PRF for PBKDF2" << params["prf"].get_str() << "not supported.";
 			return bytesSec();
 		}
 		unsigned iterations = params["c"].get_int();
@@ -397,13 +397,13 @@ bytesSec SecretStore::decrypt(string const& _v, string const& _pass)
 	}
 	else
 	{
-		cwarn << "Unknown KDF" << o["kdf"].get_str() << "not supported.";
+		LOGWRN << "Unknown KDF" << o["kdf"].get_str() << "not supported.";
 		return bytesSec();
 	}
 
 	if (derivedKey.size() < 32 && !(o.count("compat") && o["compat"].get_str() == "2"))
 	{
-		cwarn << "Derived key's length too short (<32 bytes)";
+		LOGWRN << "Derived key's length too short (<32 bytes)";
 		return bytesSec();
 	}
 
@@ -420,7 +420,7 @@ bytesSec SecretStore::decrypt(string const& _v, string const& _pass)
 			macExp = sha3(derivedKey.ref().cropped(16, 16).toBytes() + cipherText);
 		if (mac != macExp)
 		{
-			cwarn << "Invalid key - MAC mismatch; expected" << toString(macExp) << ", got" << toString(mac);
+			LOGWRN << "Invalid key - MAC mismatch; expected" << toString(macExp) << ", got" << toString(mac);
 			return bytesSec();
 		}
 	}
@@ -430,12 +430,12 @@ bytesSec SecretStore::decrypt(string const& _v, string const& _pass)
 		h256 macExp = sha3(asBytes(o["sillymacjson"].get_str()) + derivedKey.ref().cropped(derivedKey.size() - 16).toBytes() + cipherText);
 		if (mac != macExp)
 		{
-			cwarn << "Invalid key - MAC mismatch; expected" << toString(macExp) << ", got" << toString(mac);
+			LOGWRN << "Invalid key - MAC mismatch; expected" << toString(macExp) << ", got" << toString(mac);
 			return bytesSec();
 		}
 	}
 	else
-		cwarn << "No MAC. Proceeding anyway.";
+		LOGWRN << "No MAC. Proceeding anyway.";
 
 	// decrypt
 	if (o["cipher"].get_str() == "aes-128-ctr")
@@ -452,7 +452,7 @@ bytesSec SecretStore::decrypt(string const& _v, string const& _pass)
 	}
 	else
 	{
-		cwarn << "Unknown cipher" << o["cipher"].get_str() << "not supported.";
+		LOGWRN << "Unknown cipher" << o["cipher"].get_str() << "not supported.";
 		return bytesSec();
 	}
 }

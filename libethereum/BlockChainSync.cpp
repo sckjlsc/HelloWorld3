@@ -916,7 +916,7 @@ void BlockChainSync::onPeerNewHashes(std::shared_ptr<EthereumPeer> _peer, std::v
             knowns++;
         else if (status == QueueStatus::Bad)
         {
-            cwarn << "block hash bad!" << h << ". Bailing...";
+        	LOGWRN << "block hash bad!" << h << ". Bailing...";
             return;
         }
         else if (status == QueueStatus::Unknown)

@@ -18,7 +18,7 @@ EVM::EVM(evmc_instance* _instance) noexcept : m_instance(_instance)
     // Set the options.
     for (auto& pair : evmcOptions())
         if (evmc_set_option(m_instance, pair.first.c_str(), pair.second.c_str()) != 1)
-            cwarn << "Failed to set EVMC parameter '" << pair.first << "'";
+            LOGWRN << "Failed to set EVMC parameter '" << pair.first << "'";
 }
 
 /// Handy wrapper for evmc_execute().
@@ -68,7 +68,7 @@ owning_bytes_ref EVMC::exec(u256& io_gas, ExtVMFace& _ext, const OnOpFunc& _onOp
     case EVMC_FAILURE:
         BOOST_THROW_EXCEPTION(OutOfGas());
 
-    case EVMC_INVALID_INSTRUCTION: // NOTE: this could have its own exception
+    case EVMC_INVALID_INSTRUCTION:  // NOTE: this could have its own exception
     case EVMC_UNDEFINED_INSTRUCTION:
         BOOST_THROW_EXCEPTION(BadInstruction());
 
@@ -88,7 +88,7 @@ owning_bytes_ref EVMC::exec(u256& io_gas, ExtVMFace& _ext, const OnOpFunc& _onOp
         BOOST_THROW_EXCEPTION(DisallowedStateChange());
 
     case EVMC_REJECTED:
-        cwarn << "Execution rejected by EVMC, executing with default VM implementation";
+        LOGWRN << "Execution rejected by EVMC, executing with default VM implementation";
         return VMFactory::create(VMKind::Legacy)->exec(io_gas, _ext, _onOp);
 
     case EVMC_INTERNAL_ERROR:

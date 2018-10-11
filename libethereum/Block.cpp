@@ -162,7 +162,7 @@ PopulationStatistics Block::populateFromChain(BlockChain const& _bc, h256 const&
     if (!_bc.isKnown(_h))
     {
         // Might be worth throwing here.
-        cwarn << "Invalid block given for state population: " << _h;
+    	LOGWRN << "Invalid block given for state population: " << _h;
         BOOST_THROW_EXCEPTION(BlockNotFound() << errinfo_target(_h));
     }
 
@@ -253,9 +253,9 @@ bool Block::sync(BlockChain const& _bc, h256 const& _block, BlockHeader const& _
 
         if (m_state.db().lookup(bi.stateRoot()).empty())	// TODO: API in State for this?
         {
-            cwarn << "Unable to sync to" << bi.hash() << "; state root" << bi.stateRoot() << "not found in database.";
-            cwarn << "Database corrupt: contains block without stateRoot:" << bi;
-            cwarn << "Try rescuing the database by running: eth --rescue";
+        	LOGWRN << "Unable to sync to" << bi.hash() << "; state root" << bi.stateRoot() << "not found in database.";
+        	LOGWRN << "Database corrupt: contains block without stateRoot:" << bi;
+        	LOGWRN << "Try rescuing the database by running: eth --rescue";
             BOOST_THROW_EXCEPTION(InvalidStateRoot() << errinfo_target(bi.stateRoot()));
         }
         m_previousBlock = bi;
@@ -399,7 +399,7 @@ pair<TransactionReceipts, bool> Block::sync(BlockChain const& _bc, TransactionQu
                 {
                     // Something else went wrong - drop it.
                     _tq.drop(t.sha3());
-                    cwarn << t.sha3() << "Transaction caused low-level exception :(";
+                    LOGWRN << t.sha3() << "Transaction caused low-level exception :(";
                 }
             }
         if (chrono::steady_clock::now() > deadline)
@@ -889,7 +889,7 @@ void Block::cleanup()
     }
     catch (BadRoot const&)
     {
-        cwarn << "Trie corrupt! :-(";
+    	LOGWRN << "Trie corrupt! :-(";
         throw;
     }
 

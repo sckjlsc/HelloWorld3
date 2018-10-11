@@ -90,11 +90,10 @@ void mine(BlockHeader& _bi, SealEngineFace* _sealer, bool _verify)
         _sealer->verify(JustSeal, _bi);
 }
 
-}
+}  // namespace eth
 
 namespace test
 {
-
 string netIdToString(eth::Network _netId)
 {
     switch (_netId)
@@ -266,7 +265,7 @@ u256 toU256(json_spirit::mValue const& _v)
     case json_spirit::real_type:
         return (u256)(uint64_t)_v.get_real();
     default:
-        cwarn << "Bad type for scalar: " << _v.type();
+        LOGWRN << "Bad type for scalar: " << _v.type();
     }
     return 0;
 }
@@ -283,7 +282,7 @@ int64_t toInt64(json_spirit::mValue const& _v)
         n = _v.get_int64();
         break;
     default:
-        cwarn << "Bad type for scalar: " << _v.type();
+        LOGWRN << "Bad type for scalar: " << _v.type();
     }
     return n;
 }
@@ -307,7 +306,7 @@ uint64_t toUint64(json_spirit::mValue const& _v)
         n = _v.get_uint64();
         break;
     default:
-        cwarn << "Bad type for scalar: " << _v.type();
+        LOGWRN << "Bad type for scalar: " << _v.type();
     }
     return n;
 }
@@ -325,7 +324,7 @@ byte toByte(json_spirit::mValue const& _v)
     case json_spirit::real_type:
         return (byte)_v.get_real();
     default:
-        cwarn << "Bad type for scalar: " << _v.type();
+        LOGWRN << "Bad type for scalar: " << _v.type();
     }
     return 0;
 }
@@ -728,5 +727,5 @@ void Listener::notifyTestFinished(int64_t _gasUsed)
     if (g_listener)
         g_listener->testFinished(_gasUsed);
 }
-}
-}  // namespaces
+}  // namespace test
+}  // namespace dev

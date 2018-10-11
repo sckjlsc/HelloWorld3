@@ -81,11 +81,11 @@ void OverlayDB::commit()
             {
                 if (i == 9)
                 {
-                    cwarn << "Fail writing to state database. Bombing out.";
+                	LOGWRN << "Fail writing to state database. Bombing out.";
                     exit(-1);
                 }
-                cwarn << "Error writing to state database: " << boost::diagnostic_information(ex);
-                cwarn << "Sleeping for" << (i + 1) << "seconds, then retrying.";
+                LOGWRN << "Error writing to state database: " << boost::diagnostic_information(ex);
+                LOGWRN << "Sleeping for" << (i + 1) << "seconds, then retrying.";
                 std::this_thread::sleep_for(std::chrono::seconds(i + 1));
             }
         }
@@ -109,7 +109,7 @@ bytes OverlayDB::lookupAux(h256 const& _h) const
     b.push_back(255);   // for aux
     std::string const v = m_db->lookup(toSlice(b));
     if (v.empty())
-        cwarn << "Aux not found: " << _h;
+    	LOGWRN << "Aux not found: " << _h;
 
     return asBytes(v);
 }
@@ -150,7 +150,7 @@ void OverlayDB::kill(h256 const& _h)
                 // No point node ref decreasing for EmptyTrie since we never bother incrementing it
                 // in the first place for empty storage tries.
                 if (_h != EmptyTrie)
-                    cnote << "Decreasing DB node ref count below zero with no DB node. Probably "
+                	LOGINF << "Decreasing DB node ref count below zero with no DB node. Probably "
                              "have a corrupt Trie."
                           << _h;
                 // TODO: for 1.1: ref-counted triedb.

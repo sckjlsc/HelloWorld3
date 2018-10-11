@@ -29,13 +29,13 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 
-#include <libdevcore/Common.h>
+#include "Common.h"
+#include "Network.h"
+#include "UPnP.h"
 #include <libdevcore/Assertions.h>
+#include <libdevcore/Common.h>
 #include <libdevcore/CommonIO.h>
 #include <libdevcore/Exceptions.h>
-#include "Common.h"
-#include "UPnP.h"
-#include "Network.h"
 
 using namespace std;
 using namespace dev;
@@ -55,7 +55,7 @@ std::set<bi::address> Network::getInterfaceAddresses()
     char ac[80];
     if (gethostname(ac, sizeof(ac)) == SOCKET_ERROR)
     {
-    	LOGNETDBG << "Error " << WSAGetLastError() << " when getting local host name.";
+        LOGNETDBG << "Error " << WSAGetLastError() << " when getting local host name.";
         WSACleanup();
         BOOST_THROW_EXCEPTION(NoNetworking());
     }
@@ -63,7 +63,7 @@ std::set<bi::address> Network::getInterfaceAddresses()
     struct hostent* phe = gethostbyname(ac);
     if (phe == 0)
     {
-    	LOGNETDBG << "Bad host lookup.";
+        LOGNETDBG << "Bad host lookup.";
         WSACleanup();
         BOOST_THROW_EXCEPTION(NoNetworking());
     }
@@ -72,7 +72,7 @@ std::set<bi::address> Network::getInterfaceAddresses()
     {
         struct in_addr addr;
         memcpy(&addr, phe->h_addr_list[i], sizeof(struct in_addr));
-        char *addrStr = inet_ntoa(addr);
+        char* addrStr = inet_ntoa(addr);
         bi::address address(bi::address::from_string(addrStr));
         if (!isLocalHostAddress(address))
             addresses.insert(address.to_v4());
@@ -91,14 +91,15 @@ std::set<bi::address> Network::getInterfaceAddresses()
 
         if (ifa->ifa_addr->sa_family == AF_INET)
         {
-            in_addr addr = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-            boost::asio::ip::address_v4 address(boost::asio::detail::socket_ops::network_to_host_long(addr.s_addr));
+            in_addr addr = ((struct sockaddr_in*)ifa->ifa_addr)->sin_addr;
+            boost::asio::ip::address_v4 address(
+                boost::asio::detail::socket_ops::network_to_host_long(addr.s_addr));
             if (!isLocalHostAddress(address))
                 addresses.insert(address);
         }
         else if (ifa->ifa_addr->sa_family == AF_INET6)
         {
-            sockaddr_in6* sockaddr = ((struct sockaddr_in6 *)ifa->ifa_addr);
+            sockaddr_in6* sockaddr = ((struct sockaddr_in6*)ifa->ifa_addr);
             in6_addr addr = sockaddr->sin6_addr;
             boost::asio::ip::address_v6::bytes_type bytes;
             memcpy(&bytes[0], addr.s6_addr, 16);
@@ -108,7 +109,7 @@ std::set<bi::address> Network::getInterfaceAddresses()
         }
     }
 
-    if (ifaddr!=NULL)
+    if (ifaddr != NULL)
         freeifaddrs(ifaddr);
 
 #endif
@@ -124,23 +125,28 @@ int Network::tcp4Listen(bi::tcp::acceptor& _acceptor, NetworkConfig const& _conf
     //
     // Preferred IP: Attempt if set, else, try 0.0.0.0 (all interfaces)
     // Preferred Port: Attempt if set, else, try c_defaultListenPort or 0 (random)
-    // TODO: throw instead of returning -1 
-    
+    // TODO: throw instead of returning -1
+
     bi::address listenIP;
     try
     {
-        listenIP = _config.listenIPAddress.empty() ? bi::address_v4() : bi::address::from_string(_config.listenIPAddress);
+        listenIP = _config.listenIPAddress.empty() ?
+                       bi::address_v4() :
+                       bi::address::from_string(_config.listenIPAddress);
     }
     catch (...)
     {
-        cwarn << "Couldn't start accepting connections on host. Failed to accept socket on " << listenIP << ":" << _config.listenPort << ".\n" << boost::current_exception_diagnostic_information();
+        LOGWRN << "Couldn't start accepting connections on host. Failed to accept socket on "
+               << listenIP << ":" << _config.listenPort << ".\n"
+               << boost::current_exception_diagnostic_information();
         return -1;
     }
     bool requirePort = (bool)_config.listenPort;
 
     for (unsigned i = 0; i < 2; ++i)
     {
-        bi::tcp::endpoint endpoint(listenIP, requirePort ? _config.listenPort : (i ? 0 : c_defaultListenPort));
+        bi::tcp::endpoint endpoint(
+            listenIP, requirePort ? _config.listenPort : (i ? 0 : c_defaultListenPort));
         try
         {
 #if defined(_WIN32)
@@ -156,15 +162,19 @@ int Network::tcp4Listen(bi::tcp::acceptor& _acceptor, NetworkConfig const& _conf
         }
         catch (...)
         {
-            // bail if this is first attempt && port was specificed, or second attempt failed (random port)
+            // bail if this is first attempt && port was specificed, or second attempt failed
+            // (random port)
             if (i || requirePort)
             {
                 // both attempts failed
-                cwarn << "Couldn't start accepting connections on host. Failed to accept socket on " << listenIP << ":" << _config.listenPort << ".\n" << boost::current_exception_diagnostic_information();
+                LOGWRN
+                    << "Couldn't start accepting connections on host. Failed to accept socket on "
+                    << listenIP << ":" << _config.listenPort << ".\n"
+                    << boost::current_exception_diagnostic_information();
                 _acceptor.close();
                 return -1;
             }
-            
+
             _acceptor.close();
             continue;
         }
@@ -173,7 +183,8 @@ int Network::tcp4Listen(bi::tcp::acceptor& _acceptor, NetworkConfig const& _conf
     return -1;
 }
 
-bi::tcp::endpoint Network::traverseNAT(std::set<bi::address> const& _ifAddresses, unsigned short _listenPort, bi::address& o_upnpInterfaceAddr)
+bi::tcp::endpoint Network::traverseNAT(std::set<bi::address> const& _ifAddresses,
+    unsigned short _listenPort, bi::address& o_upnpInterfaceAddr)
 {
     asserts(_listenPort != 0);
 
@@ -183,15 +194,18 @@ bi::tcp::endpoint Network::traverseNAT(std::set<bi::address> const& _ifAddresses
         upnp.reset(new UPnP);
     }
     // let m_upnp continue as null - we handle it properly.
-    catch (...) {}
+    catch (...)
+    {
+    }
 
     bi::tcp::endpoint upnpEP;
     if (upnp && upnp->isValid())
     {
         bi::address pAddr;
         int extPort = 0;
-        for (auto const& addr: _ifAddresses)
-            if (addr.is_v4() && isPrivateAddress(addr) && (extPort = upnp->addRedirect(addr.to_string().c_str(), _listenPort)))
+        for (auto const& addr : _ifAddresses)
+            if (addr.is_v4() && isPrivateAddress(addr) &&
+                (extPort = upnp->addRedirect(addr.to_string().c_str(), _listenPort)))
             {
                 pAddr = addr;
                 break;
@@ -201,13 +215,14 @@ bi::tcp::endpoint Network::traverseNAT(std::set<bi::address> const& _ifAddresses
         bi::address eIPAddr(bi::address::from_string(eIP));
         if (extPort && eIP != string("0.0.0.0") && !isPrivateAddress(eIPAddr))
         {
-        	LOGNETINF << "Punched through NAT and mapped local port " << _listenPort << " onto external port " << extPort << ".";
-        	LOGNETINF << "External addr: " << eIP;
+            LOGNETINF << "Punched through NAT and mapped local port " << _listenPort
+                      << " onto external port " << extPort << ".";
+            LOGNETINF << "External addr: " << eIP;
             o_upnpInterfaceAddr = pAddr;
             upnpEP = bi::tcp::endpoint(eIPAddr, (unsigned short)extPort);
         }
         else
-        	LOGNETDBG << "Couldn't punch through NAT (or no NAT in place).";
+            LOGNETDBG << "Couldn't punch through NAT (or no NAT in place).";
     }
 
     return upnpEP;
@@ -226,7 +241,9 @@ bi::tcp::endpoint Network::resolveHost(string const& _addr)
         if (split.size() > 1)
             port = static_cast<unsigned>(stoi(split.at(1)));
     }
-    catch(...) {}
+    catch (...)
+    {
+    }
 
     boost::system::error_code ec;
     bi::address address = bi::address::from_string(split[0], ec);
@@ -241,7 +258,7 @@ bi::tcp::endpoint Network::resolveHost(string const& _addr)
         auto it = r.resolve({bi::tcp::v4(), split[0], toString(port)}, ec);
         if (ec)
         {
-        	LOGNETDBG << "Error resolving host address... " << _addr << " : " << ec.message();
+            LOGNETDBG << "Error resolving host address... " << _addr << " : " << ec.message();
             return bi::tcp::endpoint();
         }
         else
@@ -249,4 +266,3 @@ bi::tcp::endpoint Network::resolveHost(string const& _addr)
     }
     return ep;
 }
-
