@@ -487,7 +487,7 @@ void NodeTable::onReceived(UDPSocketFace*, bi::udp::endpoint const& _from, bytes
                     });
                 if (!expected)
                 {
-                    cnetdetails << "Dropping unsolicited neighbours packet from "
+                	LOGNETTRC << "Dropping unsolicited neighbours packet from "
                                 << _from.address();
                     break;
                 }
@@ -507,7 +507,7 @@ void NodeTable::onReceived(UDPSocketFace*, bi::udp::endpoint const& _from, bytes
                     Neighbours out(_from, nearest, offset, nlimit);
                     out.sign(m_secret);
                     if (out.data.size() > 1280)
-                        cnetlog << "Sending truncated datagram, size: " << out.data.size();
+                    	LOGNETDBG << "Sending truncated datagram, size: " << out.data.size();
                     m_socketPointer->send(out);
                 }
                 break;

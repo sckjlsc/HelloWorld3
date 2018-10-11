@@ -86,22 +86,22 @@ struct ECDHEError: virtual Exception {};
         (boost::log::keywords::severity = SEVERITY)(boost::log::keywords::channel = "net"))
 
 NET_GLOBAL_LOGGER(netnote, VerbosityInfo)
-#define cnetnote LOG(dev::p2p::g_netnoteLogger::get())
+#define ccnetnote LOG(dev::p2p::g_netnoteLogger::get())
 NET_GLOBAL_LOGGER(netlog, VerbosityDebug)
-#define cnetlog LOG(dev::p2p::g_netlogLogger::get())
+#define ccnetlog LOG(dev::p2p::g_netlogLogger::get())
 NET_GLOBAL_LOGGER(netdetails, VerbosityTrace)
-#define cnetdetails LOG(dev::p2p::g_netdetailsLogger::get())
+#define ccnetdetails LOG(dev::p2p::g_netdetailsLogger::get())
 
-inline std::string location(const std::string& path) {
+inline std::string p2p_location(const std::string& path) {
   return path.substr(path.find_last_of("/\\") + 1);
 }
 
 #define LOGNETTRC \
-		cnetdetails << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccnetdetails << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGNETDBG \
-		cnetlog << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccnetlog << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
 #define LOGNETINF \
-		cnetnote << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		ccnetnote << "[" << p2p_location(__FILE__) << ":" << __LINE__ << "] "
 
 enum PacketType
 {

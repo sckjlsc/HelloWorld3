@@ -372,17 +372,17 @@ protected:
                                                  ///< the DB
     Signal<bytes const&> m_onBlockSealed;        ///< Called if we have sealed a new block
 
-    Logger m_logger{createLogger(VerbosityInfo, "client")};
-    Logger m_loggerDetail{createLogger(VerbosityDebug, "client")};
+    Logger mc_logger{createLogger(VerbosityInfo, "client")};
+    Logger mc_loggerDetail{createLogger(VerbosityDebug, "client")};
 
     inline std::string location(const std::string& path) {
       return path.substr(path.find_last_of("/\\") + 1);
     }
 
     #define LOGCLTDBG \
-		LOG(m_loggerDetail) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		LOG(mc_loggerDetail) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
     #define LOGCLTINF \
-		LOG(m_logger) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
+		LOG(mc_logger) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 };
 
 }

@@ -65,7 +65,7 @@ EthereumPeer::~EthereumPeer()
 {
     if (m_asking != Asking::Nothing)
     {
-        cnetdetails << "Peer aborting while being asked for " << ::toString(m_asking);
+    	LOGNETTRC << "Peer aborting while being asked for " << ::toString(m_asking);
         setRude();
     }
     abortSync();
@@ -282,7 +282,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
 
         if (skip > std::numeric_limits<unsigned>::max() - 1)
         {
-            cnetdetails << "Requested block skip is too big: " << skip;
+        	LOGNETTRC << "Requested block skip is too big: " << skip;
             break;
         }
 
@@ -308,7 +308,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
     case GetBlockBodiesPacket:
     {
         unsigned count = static_cast<unsigned>(_r.itemCount());
-        cnetlog << "GetBlockBodies (" << dec << count << " entries)";
+        LOGNETDBG << "GetBlockBodies (" << dec << count << " entries)";
 
         if (!count)
         {
@@ -345,7 +345,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
     {
         unsigned itemCount = _r.itemCount();
 
-        cnetlog << "BlockHashes (" << dec << itemCount << " entries) "
+        LOGNETDBG << "BlockHashes (" << dec << itemCount << " entries) "
                 << (itemCount ? "" : " : NoMoreHashes");
 
         if (itemCount > c_maxIncomingNewHashes)
@@ -370,7 +370,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             addRating(-10);
             break;
         }
-        cnetlog << "GetNodeData (" << dec << count << " entries)";
+        LOGNETDBG << "GetNodeData (" << dec << count << " entries)";
 
         strings const data = hostData->nodeData(_r);
 
@@ -391,7 +391,7 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             addRating(-10);
             break;
         }
-        cnetlog << "GetReceipts (" << dec << count << " entries)";
+        LOGNETDBG << "GetReceipts (" << dec << count << " entries)";
 
         pair<bytes, unsigned> const rlpAndItemCount = hostData->receipts(_r);
 
@@ -429,12 +429,12 @@ bool EthereumPeer::interpretCapabilityPacket(unsigned _id, RLP const& _r)
     }
     catch (Exception const&)
     {
-        cnetlog << "Peer causing an Exception: "
+    	LOGNETDBG << "Peer causing an Exception: "
                 << boost::current_exception_diagnostic_information() << " " << _r;
     }
     catch (std::exception const& _e)
     {
-        cnetlog << "Peer causing an exception: " << _e.what() << " " << _r;
+    	LOGNETDBG << "Peer causing an exception: " << _e.what() << " " << _r;
     }
 
     return true;

@@ -86,7 +86,7 @@ bool WarpPeerCapability::interpretCapabilityPacket(unsigned _id, RLP const& _r)
             m_snapshotHash = _r[5].toHash<h256>();
             m_snapshotNumber = _r[6].toInt<u256>();
 
-            cnetlog << "Status: "
+            LOGNETDBG << "Status: "
                     << " protocol version " << m_protocolVersion << " networkId " << m_networkId
                     << " genesis hash " << m_genesisHash << " total difficulty "
                     << m_totalDifficulty << " latest hash " << m_latestHash << " snapshot hash "
@@ -153,12 +153,12 @@ bool WarpPeerCapability::interpretCapabilityPacket(unsigned _id, RLP const& _r)
     }
     catch (Exception const&)
     {
-        cnetlog << "Warp Peer causing an Exception: "
+    	LOGNETDBG << "Warp Peer causing an Exception: "
                 << boost::current_exception_diagnostic_information() << " " << _r;
     }
     catch (std::exception const& _e)
     {
-        cnetlog << "Warp Peer causing an exception: " << _e.what() << " " << _r;
+    	LOGNETDBG << "Warp Peer causing an exception: " << _e.what() << " " << _r;
     }
 
     return true;

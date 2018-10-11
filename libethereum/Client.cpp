@@ -234,7 +234,7 @@ void Client::startedWorking()
 {
     // Synchronise the state according to the head of the block chain.
     // TODO: currently it contains keys for *all* blocks. Make it remove old ones.
-    LOG(m_loggerDetail) << "startedWorking()";
+	LOGCLTDBG << "startedWorking()";
 
     DEV_WRITE_GUARDED(x_preSeal)
         m_preSeal.sync(bc());
@@ -394,7 +394,7 @@ void Client::syncBlockQueue()
 
     if (count)
     {
-        LOG(m_logger) << count << " blocks imported in " << unsigned(elapsed * 1000) << " ms ("
+    	LOGCLTINF << count << " blocks imported in " << unsigned(elapsed * 1000) << " ms ("
                       << (count / elapsed) << " blocks/s) in #" << bc().number();
     }
 
@@ -460,10 +460,10 @@ void Client::onDeadBlocks(h256s const& _blocks, h256Hash& io_changed)
     // insert transactions that we are declaring the dead part of the chain
     for (auto const& h: _blocks)
     {
-        LOG(m_loggerDetail) << "Dead block: " << h;
+    	LOGCLTDBG << "Dead block: " << h;
         for (auto const& t: bc().transactions(h))
         {
-            LOG(m_loggerDetail) << "Resubmitting dead-block transaction "
+        	LOGCLTDBG << "Resubmitting dead-block transaction "
                                 << Transaction(t, CheckTransaction::None);
             ctrace << "Resubmitting dead-block transaction " << Transaction(t, CheckTransaction::None);
             m_tq.import(t, IfDropped::Retry);
@@ -478,7 +478,7 @@ void Client::onNewBlocks(h256s const& _blocks, h256Hash& io_changed)
 {
     // remove transactions from m_tq nicely rather than relying on out of date nonce later on.
     for (auto const& h: _blocks)
-        LOG(m_loggerDetail) << "Live block: " << h;
+    	LOGCLTDBG << "Live block: " << h;
 
     if (auto h = m_host.lock())
         h->noteNewBlocks();
@@ -516,7 +516,7 @@ void Client::restartMining()
             if (!m_postSeal.isSealed() || m_postSeal.info().hash() != newPreMine.info().parentHash())
                 for (auto const& t : m_postSeal.pending())
                 {
-                    LOG(m_loggerDetail) << "Resubmitting post-seal transaction " << t;
+                	LOGCLTDBG << "Resubmitting post-seal transaction " << t;
                     //                      ctrace << "Resubmitting post-seal transaction " << t;
                     auto ir = m_tq.import(t, IfDropped::Retry);
                     if (ir != ImportResult::Success)
@@ -555,7 +555,7 @@ void Client::onChainChanged(ImportRoute const& _ir)
     onDeadBlocks(_ir.deadBlocks, changeds);
     for (auto const& t: _ir.goodTranactions)
     {
-        LOG(m_loggerDetail) << "Safely dropping transaction " << t.sha3();
+    	LOGCLTDBG << "Safely dropping transaction " << t.sha3();
         m_tq.dropGood(t);
     }
     onNewBlocks(_ir.liveBlocks, changeds);
@@ -571,7 +571,7 @@ bool Client::remoteActive() const
 
 void Client::onPostStateChanged()
 {
-    LOG(m_loggerDetail) << "Post state changed.";
+	LOGCLTDBG << "Post state changed.";
     m_signalled.notify_all();
     m_remoteWorking = false;
 }
@@ -580,14 +580,14 @@ void Client::startSealing()
 {
     if (m_wouldSeal == true)
         return;
-    LOG(m_logger) << "Mining Beneficiary: " << author();
+    LOGCLTINF << "Mining Beneficiary: " << author();
     if (author())
     {
         m_wouldSeal = true;
         m_signalled.notify_all();
     }
     else
-        LOG(m_logger) << "You need to set an author in order to seal!";
+    	LOGCLTINF << "You need to set an author in order to seal!";
 }
 
 void Client::rejigSealing()
@@ -598,16 +598,16 @@ void Client::rejigSealing()
         {
             m_wouldButShouldnot = false;
 
-            LOG(m_loggerDetail) << "Rejigging seal engine...";
+            LOGCLTDBG << "Rejigging seal engine...";
             DEV_WRITE_GUARDED(x_working)
             {
                 if (m_working.isSealed())
                 {
-                    LOG(m_logger) << "Tried to seal sealed block...";
+                	LOGCLTINF << "Tried to seal sealed block...";
                     return;
                 }
                 // TODO is that needed? we have "Generating seal on" below
-                LOG(m_loggerDetail) << "Starting to seal block #" << m_working.info().number();
+                LOGCLTDBG << "Starting to seal block #" << m_working.info().number();
                 m_working.commitToSeal(bc(), m_extraData);
             }
             DEV_READ_GUARDED(x_working)
@@ -620,11 +620,11 @@ void Client::rejigSealing()
             if (wouldSeal())
             {
                 sealEngine()->onSealGenerated([=](bytes const& _header) {
-                    LOG(m_logger) << "Block sealed #" << BlockHeader(_header, HeaderData).number();
+                	LOGCLTINF << "Block sealed #" << BlockHeader(_header, HeaderData).number();
                     if (this->submitSealed(_header))
                         m_onBlockSealed(_header);
                     else
-                        LOG(m_logger) << "Submitting block failed...";
+                    	LOGCLTINF << "Submitting block failed...";
                 });
                 ctrace << "Generating seal on " << m_sealingInfo.hash(WithoutSeal) << " #" << m_sealingInfo.number();
                 sealEngine()->generateSeal(m_sealingInfo);
@@ -714,7 +714,7 @@ void Client::tick()
         m_bq.tick();
         m_lastTick = chrono::system_clock::now();
         if (m_report.ticks == 15)
-            LOG(m_loggerDetail) << activityReport();
+        	LOGCLTDBG << activityReport();
     }
 }
 
@@ -729,7 +729,7 @@ void Client::checkWatchGarbage()
                 if (m_watches[key].lastPoll != chrono::system_clock::time_point::max() && chrono::system_clock::now() - m_watches[key].lastPoll > chrono::seconds(20))
                 {
                     toUninstall.push_back(key);
-                    LOG(m_loggerDetail)
+                    LOGCLTDBG
                         << "GC: Uninstall " << key << " ("
                         << chrono::duration_cast<chrono::seconds>(
                                chrono::system_clock::now() - m_watches[key].lastPoll)

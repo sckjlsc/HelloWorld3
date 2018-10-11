@@ -361,7 +361,13 @@ private:
 
     ReputationManager m_repMan;
 
-    Logger m_logger{createLogger(VerbosityDebug, "net")};
+    Logger m_host_logger{createLogger(VerbosityDebug, "net")};
+    inline std::string location(const std::string& path) {
+      return path.substr(path.find_last_of("/\\") + 1);
+    }
+
+    #define LOGHOSTDBG \
+		LOG(m_host_logger) << "[" << location(__FILE__) << ":" << __LINE__ << "] "
 };
 
 }

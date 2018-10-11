@@ -123,7 +123,7 @@ bool ClientTest::mineBlocks(unsigned _count) noexcept
     }
     catch (std::exception const&)
     {
-        LOG(m_logger) << boost::current_exception_diagnostic_information();
+    	LOGCLTINF << boost::current_exception_diagnostic_information();
         return false;
     }
 }

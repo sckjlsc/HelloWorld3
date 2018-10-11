@@ -269,7 +269,7 @@ bool ClientBase::uninstallWatch(unsigned _i)
     if (fit != m_filters.end())
         if (!--fit->second.refCount)
         {
-            LOG(m_loggerWatch) << "*X*" << fit->first << ":" << fit->second.filter;
+        	LOGCLTWCH << "*X*" << fit->first << ":" << fit->second.filter;
             m_filters.erase(fit);
         }
     return true;
@@ -279,9 +279,9 @@ LocalisedLogEntries ClientBase::peekWatch(unsigned _watchId) const
 {
     Guard l(x_filtersWatches);
 
-    //	LOG(m_loggerWatch) << "peekWatch" << _watchId;
+    //	LOGCLTWCH << "peekWatch" << _watchId;
     auto& w = m_watches.at(_watchId);
-    //	LOG(m_loggerWatch) << "lastPoll updated to " <<
+    //	LOGCLTWCH << "lastPoll updated to " <<
     //chrono::duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
     if (w.lastPoll != chrono::system_clock::time_point::max())
         w.lastPoll = chrono::system_clock::now();
@@ -293,9 +293,9 @@ LocalisedLogEntries ClientBase::checkWatch(unsigned _watchId)
     Guard l(x_filtersWatches);
     LocalisedLogEntries ret;
 
-    //	LOG(m_loggerWatch) << "checkWatch" << _watchId;
+    //	LOGCLTWCH << "checkWatch" << _watchId;
     auto& w = m_watches.at(_watchId);
-    //	LOG(m_loggerWatch) << "lastPoll updated to " <<
+    //	LOGCLTWCH << "lastPoll updated to " <<
     //chrono::duration_cast<chrono::seconds>(chrono::system_clock::now().time_since_epoch()).count();
     std::swap(ret, w.changes);
     if (w.lastPoll != chrono::system_clock::time_point::max())
